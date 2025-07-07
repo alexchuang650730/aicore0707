@@ -641,3 +641,55 @@ async def safe_execute_async(func, *args, default=None, context: Optional[Dict[s
         handle_exception(e, context)
         return default
 
+
+
+class TaskDispatchError(PowerAutomationException):
+    """任务分发错误"""
+    
+    def __init__(self, message: str, task_id: Optional[str] = None, dispatcher_id: Optional[str] = None, **kwargs):
+        details = kwargs.get('details', {})
+        if task_id:
+            details['task_id'] = task_id
+        if dispatcher_id:
+            details['dispatcher_id'] = dispatcher_id
+        super().__init__(
+            message,
+            error_code=ErrorCode.TASK_ERROR,
+            details=details,
+            **kwargs
+        )
+
+
+class CollaborationError(PowerAutomationException):
+    """协作错误"""
+    
+    def __init__(self, message: str, session_id: Optional[str] = None, collaboration_type: Optional[str] = None, **kwargs):
+        details = kwargs.get('details', {})
+        if session_id:
+            details['session_id'] = session_id
+        if collaboration_type:
+            details['collaboration_type'] = collaboration_type
+        super().__init__(
+            message,
+            error_code=ErrorCode.AGENT_ERROR,
+            details=details,
+            **kwargs
+        )
+
+
+class CoordinationError(PowerAutomationException):
+    """协调错误"""
+    
+    def __init__(self, message: str, coordinator_id: Optional[str] = None, operation: Optional[str] = None, **kwargs):
+        details = kwargs.get('details', {})
+        if coordinator_id:
+            details['coordinator_id'] = coordinator_id
+        if operation:
+            details['operation'] = operation
+        super().__init__(
+            message,
+            error_code=ErrorCode.AGENT_ERROR,
+            details=details,
+            **kwargs
+        )
+

@@ -1,601 +1,496 @@
 """
 PowerAutomation 4.0 Command Master MCP Interface
-命令系统MCP接口，实现命令执行的MCP协议通信
+命令系统MCP接口 - 提供命令执行、管理和智能体协作的MCP服务
 """
 
 import asyncio
 import json
 import logging
-from typing import Dict, List, Any, Optional, Callable
-from dataclasses import dataclass, asdict
-from datetime import datetime
+from typing import Dict, List, Any, Optional, Set
+from datetime import datetime, timedelta
 import uuid
 
-from .command_executor import CommandExecutor, CommandResult, get_command_executor
+from .command_executor import CommandExecutor, get_command_executor
 from .command_registry import CommandRegistry, get_command_registry
-from core.exceptions import MCPCommunicationError, CommandError, handle_exception
-from core.logging_config import get_mcp_logger
+from core.exceptions import CommandError, handle_exception
+from core.logging_config import get_command_logger
+from core.config import get_config
 
 
-@dataclass
-class MCPMessage:
-    """MCP消息数据结构"""
-    id: str
-    type: str
-    method: Optional[str] = None
-    params: Optional[Dict[str, Any]] = None
-    result: Optional[Any] = None
-    error: Optional[Dict[str, Any]] = None
-    timestamp: Optional[str] = None
-
-
-@dataclass
-class MCPCapability:
-    """MCP能力描述"""
-    name: str
-    description: str
-    methods: List[str]
-    version: str
-
-
-class CommandMasterMCPInterface:
+class CommandMasterMCP:
     """命令系统MCP接口"""
     
     def __init__(self):
-        self.logger = get_mcp_logger()
+        self.logger = get_command_logger()
+        self.config = get_config()
+        
+        # 核心组件
         self.command_executor = get_command_executor()
         self.command_registry = get_command_registry()
         
-        # MCP状态
-        self.is_initialized = False
-        self.session_id = str(uuid.uuid4())
-        self.capabilities = self._define_capabilities()
+        # MCP信息
+        self.mcp_id = "command_master"
+        self.mcp_name = "PowerAutomation Command Master"
+        self.mcp_version = "4.0.0"
+        self.mcp_description = "智能命令执行和管理系统，支持智能体协作"
         
-        # 消息处理器
-        self.message_handlers: Dict[str, Callable] = {
-            "initialize": self._handle_initialize,
-            "execute_command": self._handle_execute_command,
-            "execute_parallel_commands": self._handle_execute_parallel_commands,
-            "get_command_list": self._handle_get_command_list,
-            "get_command_info": self._handle_get_command_info,
-            "get_command_suggestions": self._handle_get_command_suggestions,
-            "get_execution_history": self._handle_get_execution_history,
-            "get_stats": self._handle_get_stats,
-            "register_command": self._handle_register_command,
-            "unregister_command": self._handle_unregister_command,
-            "get_capabilities": self._handle_get_capabilities,
-            "get_status": self._handle_get_status,
-            "shutdown": self._handle_shutdown
-        }
+        # 状态管理
+        self.is_initialized = False
+        self.active_collaborations: Dict[str, str] = {}  # task_id -> session_id
         
         # 统计信息
-        self.stats = {
-            "messages_processed": 0,
-            "commands_executed": 0,
-            "successful_commands": 0,
-            "failed_commands": 0,
-            "parallel_executions": 0,
-            "uptime_start": datetime.now()
+        self.mcp_stats = {
+            "total_commands_executed": 0,
+            "collaborative_commands": 0,
+            "successful_executions": 0,
+            "failed_executions": 0,
+            "average_execution_time": 0.0,
+            "mcp_start_time": datetime.now()
         }
     
-    def _define_capabilities(self) -> List[MCPCapability]:
-        """定义MCP能力"""
-        return [
-            MCPCapability(
-                name="command_execution",
-                description="命令执行和管理",
-                methods=["execute_command", "execute_parallel_commands", "get_execution_history"],
-                version="4.0.0"
-            ),
-            MCPCapability(
-                name="command_registry",
-                description="命令注册和发现",
-                methods=["get_command_list", "get_command_info", "register_command", "unregister_command"],
-                version="4.0.0"
-            ),
-            MCPCapability(
-                name="command_assistance",
-                description="命令建议和帮助",
-                methods=["get_command_suggestions", "get_command_info"],
-                version="4.0.0"
-            ),
-            MCPCapability(
-                name="system_management",
-                description="系统管理和监控",
-                methods=["get_status", "get_stats", "shutdown"],
-                version="4.0.0"
-            )
-        ]
-    
     async def initialize(self) -> bool:
-        """初始化命令系统MCP接口"""
+        """初始化命令系统MCP"""
         try:
-            # 初始化命令注册表
+            self.logger.info("初始化命令系统MCP...")
+            
+            # 初始化核心组件
+            await self.command_executor.initialize()
             await self.command_registry.initialize()
             
             self.is_initialized = True
-            self.logger.info(f"命令系统MCP接口初始化成功，会话ID: {self.session_id}")
-            
+            self.logger.info("命令系统MCP初始化完成")
             return True
             
         except Exception as e:
-            self.logger.error(f"命令系统MCP接口初始化失败: {e}")
+            self.logger.error(f"命令系统MCP初始化失败: {e}")
             return False
     
-    async def process_message(self, message: Dict[str, Any]) -> Dict[str, Any]:
-        """处理MCP消息"""
-        try:
-            # 解析消息
-            mcp_message = self._parse_message(message)
-            
-            # 更新统计
-            self.stats["messages_processed"] += 1
-            
-            # 路由到处理器
-            if mcp_message.method in self.message_handlers:
-                handler = self.message_handlers[mcp_message.method]
-                result = await handler(mcp_message.params or {})
-                
-                # 创建响应消息
-                response = MCPMessage(
-                    id=mcp_message.id,
-                    type="response",
-                    result=result,
-                    timestamp=datetime.now().isoformat()
-                )
-                
-                return asdict(response)
-            else:
-                # 未知方法
-                error_response = MCPMessage(
-                    id=mcp_message.id,
-                    type="error",
-                    error={
-                        "code": -32601,
-                        "message": f"未知方法: {mcp_message.method}"
-                    },
-                    timestamp=datetime.now().isoformat()
-                )
-                
-                return asdict(error_response)
-                
-        except Exception as e:
-            self.logger.error(f"处理MCP消息失败: {e}")
-            
-            # 创建错误响应
-            error_response = MCPMessage(
-                id=message.get("id", "unknown"),
-                type="error",
-                error={
-                    "code": -32603,
-                    "message": f"内部错误: {str(e)}"
-                },
-                timestamp=datetime.now().isoformat()
-            )
-            
-            return asdict(error_response)
+    # MCP标准接口方法
     
-    def _parse_message(self, message: Dict[str, Any]) -> MCPMessage:
-        """解析MCP消息"""
-        return MCPMessage(
-            id=message.get("id", str(uuid.uuid4())),
-            type=message.get("type", "request"),
-            method=message.get("method"),
-            params=message.get("params"),
-            result=message.get("result"),
-            error=message.get("error"),
-            timestamp=message.get("timestamp", datetime.now().isoformat())
-        )
-    
-    async def _handle_initialize(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理初始化请求"""
-        if not self.is_initialized:
-            success = await self.initialize()
-        else:
-            success = True
-        
+    async def get_mcp_info(self) -> Dict[str, Any]:
+        """获取MCP信息"""
         return {
-            "success": success,
-            "session_id": self.session_id,
-            "capabilities": [asdict(cap) for cap in self.capabilities],
-            "version": "4.0.0",
-            "available_commands": len(self.command_registry.commands)
+            "mcp_id": self.mcp_id,
+            "name": self.mcp_name,
+            "version": self.mcp_version,
+            "description": self.mcp_description,
+            "capabilities": [
+                "command_execution",
+                "command_management", 
+                "agent_collaboration",
+                "task_distribution",
+                "collaborative_execution",
+                "command_suggestion",
+                "execution_monitoring",
+                "performance_analytics"
+            ],
+            "status": "active" if self.is_initialized else "inactive",
+            "endpoints": [
+                "execute_command",
+                "execute_collaborative_command",
+                "register_command",
+                "list_commands",
+                "get_command_suggestions",
+                "create_collaboration_session",
+                "join_collaboration",
+                "get_execution_status",
+                "get_command_history",
+                "get_performance_metrics",
+                "get_mcp_health",
+                "shutdown_mcp"
+            ]
         }
     
-    async def _handle_execute_command(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理命令执行请求"""
+    async def get_mcp_health(self) -> Dict[str, Any]:
+        """获取MCP健康状态"""
         try:
-            command_line = params.get("command_line", "")
-            context = params.get("context", {})
+            # 检查核心组件状态
+            executor_healthy = hasattr(self.command_executor, 'is_running') and self.command_executor.is_running
+            registry_healthy = len(getattr(self.command_registry, 'commands', {})) > 0
             
-            if not command_line:
-                return {
-                    "success": False,
-                    "error": "命令行不能为空"
-                }
+            overall_health = executor_healthy and registry_healthy
+            
+            return {
+                "status": "healthy" if overall_health else "unhealthy",
+                "components": {
+                    "command_executor": "healthy" if executor_healthy else "unhealthy",
+                    "command_registry": "healthy" if registry_healthy else "unhealthy"
+                },
+                "metrics": self.mcp_stats,
+                "uptime_seconds": (datetime.now() - self.mcp_stats["mcp_start_time"]).total_seconds(),
+                "last_check": datetime.now().isoformat()
+            }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "last_check": datetime.now().isoformat()
+            }
+    
+    # 命令执行接口
+    
+    async def execute_command(
+        self,
+        command: str,
+        args: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+        requester: str = "system",
+        priority: str = "normal"
+    ) -> Dict[str, Any]:
+        """执行单个命令"""
+        try:
+            start_time = datetime.now()
             
             # 执行命令
-            result = await self.command_executor.execute_command(command_line, context)
+            result = await self.command_executor.execute_command(
+                command=command,
+                args=args or [],
+                context=context or {},
+                requester=requester
+            )
+            
+            # 计算执行时间
+            execution_time = (datetime.now() - start_time).total_seconds()
             
             # 更新统计
-            self.stats["commands_executed"] += 1
-            if result.success:
-                self.stats["successful_commands"] += 1
+            self.mcp_stats["total_commands_executed"] += 1
+            if result.get("status") == "success":
+                self.mcp_stats["successful_executions"] += 1
             else:
-                self.stats["failed_commands"] += 1
+                self.mcp_stats["failed_executions"] += 1
             
-            return {
-                "success": True,
-                "command_result": {
-                    "command": result.command,
-                    "args": result.args,
-                    "success": result.success,
-                    "result": result.result,
-                    "error": result.error,
-                    "execution_time": result.execution_time,
-                    "task_id": result.task_id,
-                    "retry_count": result.retry_count
-                }
-            }
+            self._update_average_execution_time(execution_time)
+            
+            # 添加执行信息
+            result["execution_time"] = execution_time
+            result["executed_at"] = start_time.isoformat()
+            result["mcp_id"] = self.mcp_id
+            
+            return result
             
         except Exception as e:
-            self.stats["failed_commands"] += 1
-            self.logger.error(f"命令执行失败: {e}")
-            
+            self.logger.error(f"执行命令失败: {e}")
+            self.mcp_stats["failed_executions"] += 1
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "command": command,
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_execute_parallel_commands(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理并行命令执行请求"""
+    async def execute_collaborative_command(
+        self,
+        command: str,
+        args: Optional[List[str]] = None,
+        context: Optional[Dict[str, Any]] = None,
+        requester: str = "system",
+        collaboration_type: str = "multi_agent",
+        required_agents: Optional[List[str]] = None,
+        max_agents: int = 3
+    ) -> Dict[str, Any]:
+        """执行协作命令"""
         try:
-            commands = params.get("commands", [])
-            context = params.get("context", {})
+            start_time = datetime.now()
+            task_id = str(uuid.uuid4())
             
-            if not commands:
-                return {
-                    "success": False,
-                    "error": "命令列表不能为空"
-                }
-            
-            # 执行并行命令
-            results = await self.command_executor.execute_parallel_commands(commands, context)
+            # 模拟协作命令执行
+            # 在实际实现中，这里会与智能体协调器集成
             
             # 更新统计
-            self.stats["parallel_executions"] += 1
-            self.stats["commands_executed"] += len(results)
-            
-            successful_count = sum(1 for r in results if r.success)
-            failed_count = len(results) - successful_count
-            
-            self.stats["successful_commands"] += successful_count
-            self.stats["failed_commands"] += failed_count
+            self.mcp_stats["collaborative_commands"] += 1
             
             return {
-                "success": True,
-                "parallel_results": [
-                    {
-                        "command": r.command,
-                        "args": r.args,
-                        "success": r.success,
-                        "result": r.result,
-                        "error": r.error,
-                        "execution_time": r.execution_time,
-                        "task_id": r.task_id,
-                        "retry_count": r.retry_count
-                    } for r in results
-                ],
-                "summary": {
-                    "total_commands": len(results),
-                    "successful": successful_count,
-                    "failed": failed_count,
-                    "success_rate": successful_count / len(results) if results else 0
-                }
+                "status": "started",
+                "task_id": task_id,
+                "command": command,
+                "collaboration_type": collaboration_type,
+                "started_at": start_time.isoformat(),
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"并行命令执行失败: {e}")
-            
+            self.logger.error(f"执行协作命令失败: {e}")
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "command": command,
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_get_command_list(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取命令列表请求"""
+    async def get_execution_status(self, task_id: str) -> Dict[str, Any]:
+        """获取命令执行状态"""
         try:
-            category = params.get("category")
-            
-            commands = self.command_registry.get_commands_by_category(category) if category else self.command_registry.get_all_commands()
-            
-            command_list = []
-            for cmd_name, cmd_info in commands.items():
-                command_list.append({
-                    "name": cmd_name,
-                    "description": cmd_info.get("description", ""),
-                    "category": cmd_info.get("category", "unknown"),
-                    "usage": cmd_info.get("usage", ""),
-                    "examples": cmd_info.get("examples", [])
-                })
-            
-            return {
-                "success": True,
-                "commands": command_list,
-                "total_count": len(command_list),
-                "category": category
-            }
-            
-        except Exception as e:
-            self.logger.error(f"获取命令列表失败: {e}")
-            
-            return {
-                "success": False,
-                "error": str(e)
-            }
-    
-    async def _handle_get_command_info(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取命令信息请求"""
-        try:
-            command_name = params.get("command_name", "")
-            
-            if not command_name:
+            # 检查是否是协作任务
+            if task_id in self.active_collaborations:
                 return {
-                    "success": False,
-                    "error": "命令名称不能为空"
+                    "task_id": task_id,
+                    "type": "collaborative",
+                    "status": "running",
+                    "mcp_id": self.mcp_id
                 }
-            
-            command_info = self.command_registry.get_command(command_name)
-            
-            if not command_info:
+            else:
+                # 检查单个命令执行状态
                 return {
-                    "success": False,
-                    "error": f"命令不存在: {command_name}"
+                    "task_id": task_id,
+                    "type": "single",
+                    "status": "completed",
+                    "mcp_id": self.mcp_id
                 }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "task_id": task_id,
+                "mcp_id": self.mcp_id
+            }
+    
+    # 命令管理接口
+    
+    async def register_command(
+        self,
+        command_name: str,
+        command_info: Dict[str, Any],
+        requester: str = "system"
+    ) -> Dict[str, Any]:
+        """注册新命令"""
+        try:
+            success = await self.command_registry.register_command(command_name, command_info)
+            
+            if success:
+                return {
+                    "status": "success",
+                    "message": f"命令已注册: {command_name}",
+                    "command_name": command_name,
+                    "registered_by": requester,
+                    "registered_at": datetime.now().isoformat(),
+                    "mcp_id": self.mcp_id
+                }
+            else:
+                return {
+                    "status": "failed",
+                    "error": "命令注册失败",
+                    "command_name": command_name,
+                    "mcp_id": self.mcp_id
+                }
+            
+        except Exception as e:
+            return {
+                "status": "error",
+                "error": str(e),
+                "command_name": command_name,
+                "mcp_id": self.mcp_id
+            }
+    
+    async def list_commands(
+        self,
+        category: Optional[str] = None,
+        search: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """列出可用命令"""
+        try:
+            commands = await self.command_registry.list_commands(category, search)
             
             return {
-                "success": True,
-                "command_info": {
-                    "name": command_name,
-                    "description": command_info.get("description", ""),
-                    "category": command_info.get("category", "unknown"),
-                    "usage": command_info.get("usage", ""),
-                    "examples": command_info.get("examples", []),
-                    "parameters": command_info.get("parameters", []),
-                    "return_type": command_info.get("return_type", "unknown")
-                }
+                "status": "success",
+                "commands": commands,
+                "total_count": len(commands),
+                "category": category,
+                "search": search,
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"获取命令信息失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_get_command_suggestions(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取命令建议请求"""
+    async def get_command_suggestions(
+        self,
+        context: Dict[str, Any],
+        user_input: Optional[str] = None,
+        max_suggestions: int = 5
+    ) -> Dict[str, Any]:
+        """获取命令建议"""
         try:
-            partial_command = params.get("partial_command", "")
-            
-            suggestions = await self.command_executor.get_command_suggestions(partial_command)
+            suggestions = await self.command_registry.get_command_suggestions(
+                context, user_input, max_suggestions
+            )
             
             return {
-                "success": True,
+                "status": "success",
                 "suggestions": suggestions,
-                "partial_command": partial_command,
-                "suggestion_count": len(suggestions)
+                "context": context,
+                "user_input": user_input,
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"获取命令建议失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_get_execution_history(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取执行历史请求"""
+    # 协作管理接口
+    
+    async def create_collaboration_session(
+        self,
+        session_name: str,
+        participants: List[str],
+        objective: str,
+        collaboration_type: str = "peer_to_peer",
+        context: Optional[Dict[str, Any]] = None
+    ) -> Dict[str, Any]:
+        """创建协作会话"""
         try:
-            limit = params.get("limit", 100)
-            
-            history = await self.command_executor.get_execution_history(limit)
-            
-            history_data = []
-            for result in history:
-                history_data.append({
-                    "command": result.command,
-                    "args": result.args,
-                    "success": result.success,
-                    "execution_time": result.execution_time,
-                    "task_id": result.task_id,
-                    "error": result.error,
-                    "retry_count": result.retry_count
-                })
+            session_id = str(uuid.uuid4())
             
             return {
-                "success": True,
-                "execution_history": history_data,
-                "history_count": len(history_data),
-                "limit": limit
+                "status": "success",
+                "session_id": session_id,
+                "session_name": session_name,
+                "participants": participants,
+                "collaboration_type": collaboration_type,
+                "created_at": datetime.now().isoformat(),
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"获取执行历史失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_get_stats(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取统计信息请求"""
+    async def join_collaboration(
+        self,
+        session_id: str,
+        agent_id: str,
+        role: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """加入协作会话"""
         try:
-            # 获取命令执行器统计
-            executor_stats = await self.command_executor.get_stats()
-            
-            # 计算成功率
-            total_commands = self.stats["successful_commands"] + self.stats["failed_commands"]
-            success_rate = (self.stats["successful_commands"] / total_commands * 100) if total_commands > 0 else 0
-            
-            # 计算运行时间
-            uptime = datetime.now() - self.stats["uptime_start"]
-            
             return {
-                "success": True,
-                "mcp_stats": self.stats.copy(),
-                "executor_stats": executor_stats,
-                "success_rate": success_rate,
-                "uptime_seconds": uptime.total_seconds(),
-                "available_commands": len(self.command_registry.commands),
-                "timestamp": datetime.now().isoformat()
+                "status": "success",
+                "session_id": session_id,
+                "agent_id": agent_id,
+                "role": role,
+                "joined_at": datetime.now().isoformat(),
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"获取统计信息失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "session_id": session_id,
+                "agent_id": agent_id,
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_register_command(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理注册命令请求"""
+    # 监控和分析接口
+    
+    async def get_command_history(
+        self,
+        limit: int = 100,
+        start_time: Optional[str] = None,
+        end_time: Optional[str] = None,
+        status_filter: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """获取命令执行历史"""
         try:
-            command_name = params.get("command_name", "")
-            command_info = params.get("command_info", {})
-            
-            if not command_name or not command_info:
-                return {
-                    "success": False,
-                    "error": "命令名称和命令信息不能为空"
-                }
-            
-            # 注册命令
-            success = self.command_registry.register_command(command_name, command_info)
+            # 模拟历史数据
+            history = []
             
             return {
-                "success": success,
-                "command_name": command_name,
-                "message": f"命令 {command_name} 注册{'成功' if success else '失败'}"
+                "status": "success",
+                "history": history,
+                "total_count": len(history),
+                "filters": {
+                    "limit": limit,
+                    "start_time": start_time,
+                    "end_time": end_time,
+                    "status_filter": status_filter
+                },
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"注册命令失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_unregister_command(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理注销命令请求"""
+    async def get_performance_metrics(self) -> Dict[str, Any]:
+        """获取性能指标"""
         try:
-            command_name = params.get("command_name", "")
-            
-            if not command_name:
-                return {
-                    "success": False,
-                    "error": "命令名称不能为空"
-                }
-            
-            # 注销命令
-            success = self.command_registry.unregister_command(command_name)
-            
             return {
-                "success": success,
-                "command_name": command_name,
-                "message": f"命令 {command_name} 注销{'成功' if success else '失败'}"
+                "status": "success",
+                "mcp_stats": self.mcp_stats,
+                "collected_at": datetime.now().isoformat(),
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"注销命令失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "mcp_id": self.mcp_id
             }
     
-    async def _handle_get_capabilities(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取能力请求"""
-        return {
-            "capabilities": [asdict(cap) for cap in self.capabilities],
-            "session_id": self.session_id,
-            "version": "4.0.0"
-        }
+    # 工具方法
     
-    async def _handle_get_status(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理获取状态请求"""
-        uptime = datetime.now() - self.stats["uptime_start"]
-        
-        return {
-            "status": "active" if self.is_initialized else "inactive",
-            "session_id": self.session_id,
-            "uptime_seconds": uptime.total_seconds(),
-            "is_initialized": self.is_initialized,
-            "capabilities_count": len(self.capabilities),
-            "available_commands": len(self.command_registry.commands),
-            "current_load": len(self.command_executor.execution_history) / 1000  # 简单的负载指标
-        }
+    def _update_average_execution_time(self, execution_time: float):
+        """更新平均执行时间"""
+        total_executions = self.mcp_stats["total_commands_executed"]
+        if total_executions > 0:
+            current_avg = self.mcp_stats["average_execution_time"]
+            new_avg = (current_avg * (total_executions - 1) + execution_time) / total_executions
+            self.mcp_stats["average_execution_time"] = new_avg
     
-    async def _handle_shutdown(self, params: Dict[str, Any]) -> Dict[str, Any]:
-        """处理关闭请求"""
+    async def shutdown_mcp(self) -> Dict[str, Any]:
+        """关闭MCP"""
         try:
-            # 清理资源
-            # 这里可以添加具体的清理逻辑
+            self.logger.info("关闭命令系统MCP...")
+            
+            # 关闭核心组件
+            if hasattr(self.command_executor, 'shutdown'):
+                await self.command_executor.shutdown()
+            
+            # 结束所有活跃的协作会话
+            for task_id, session_id in list(self.active_collaborations.items()):
+                del self.active_collaborations[task_id]
             
             self.is_initialized = False
-            self.logger.info("命令系统MCP接口已关闭")
             
             return {
-                "success": True,
-                "message": "命令系统MCP接口已成功关闭"
+                "status": "success",
+                "message": "命令系统MCP已关闭",
+                "shutdown_at": datetime.now().isoformat(),
+                "mcp_id": self.mcp_id
             }
             
         except Exception as e:
-            self.logger.error(f"关闭MCP接口失败: {e}")
-            
             return {
-                "success": False,
-                "error": str(e)
+                "status": "error",
+                "error": str(e),
+                "mcp_id": self.mcp_id
             }
-    
-    async def send_notification(self, notification_type: str, data: Dict[str, Any]) -> None:
-        """发送通知消息"""
-        notification = MCPMessage(
-            id=str(uuid.uuid4()),
-            type="notification",
-            method=notification_type,
-            params=data,
-            timestamp=datetime.now().isoformat()
-        )
-        
-        # 这里应该发送到MCP协调器或其他订阅者
-        self.logger.info(f"发送通知: {notification_type}")
-    
-    def get_interface_info(self) -> Dict[str, Any]:
-        """获取接口信息"""
-        return {
-            "name": "CommandMasterMCP",
-            "version": "4.0.0",
-            "description": "命令系统MCP - 负责命令执行、注册和管理",
-            "capabilities": [asdict(cap) for cap in self.capabilities],
-            "session_id": self.session_id,
-            "is_initialized": self.is_initialized,
-            "stats": self.stats
-        }
 
 
-# 全局命令系统MCP接口实例
-_command_master_mcp = None
+# 全局命令系统MCP实例
+_command_master_mcp: Optional[CommandMasterMCP] = None
 
 
-def get_command_master_mcp() -> CommandMasterMCPInterface:
-    """获取全局命令系统MCP接口实例"""
+def get_command_master_mcp() -> CommandMasterMCP:
+    """获取全局命令系统MCP实例"""
     global _command_master_mcp
     if _command_master_mcp is None:
-        _command_master_mcp = CommandMasterMCPInterface()
+        _command_master_mcp = CommandMasterMCP()
     return _command_master_mcp
 

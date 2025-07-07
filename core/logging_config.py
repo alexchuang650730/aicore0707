@@ -332,3 +332,34 @@ except Exception:
         format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
     )
 
+
+
+def get_task_logger() -> PowerAutomationLogger:
+    """获取任务日志器"""
+    return _logger_manager.get_logger("task")
+
+
+def get_coordination_logger() -> PowerAutomationLogger:
+    """获取协调日志器"""
+    return _logger_manager.get_logger("coordination")
+
+
+def get_collaboration_logger() -> PowerAutomationLogger:
+    """获取协作日志器"""
+    return _logger_manager.get_logger("collaboration")
+
+
+def get_dispatcher_logger() -> PowerAutomationLogger:
+    """获取分发器日志器"""
+    return _logger_manager.get_logger("dispatcher")
+
+
+def get_workflow_logger() -> PowerAutomationLogger:
+    """获取工作流日志器"""
+    return _logger_manager.get_logger("workflow")
+
+
+def get_router_logger() -> PowerAutomationLogger:
+    """获取路由器日志器"""
+    return _logger_manager.get_logger("router")
+

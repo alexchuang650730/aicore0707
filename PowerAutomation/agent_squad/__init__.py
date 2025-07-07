@@ -4,11 +4,12 @@ PowerAutomation 4.0 Agent Squad
 """
 
 from .coordination.agent_coordinator import AgentCoordinator
-from .coordination.task_distributor import TaskDistributor
-from .coordination.collaboration_engine import CollaborationEngine
+from .coordination.task_dispatcher import TaskDispatcher
+from .coordination.collaboration_manager import CollaborationManager
 from .communication.agent_messenger import AgentMessenger
 from .shared.agent_base import AgentBase
 from .shared.agent_registry import AgentRegistry
+from .agent_squad import AgentSquad
 
 # 导入所有智能体
 from .agents.architect_agent.architect_agent import ArchitectAgent
@@ -20,10 +21,13 @@ from .agents.monitor_agent.monitor_agent import MonitorAgent
 
 __version__ = "4.0.0"
 __all__ = [
+    # 主要类
+    "AgentSquad",
+    
     # 协调组件
     "AgentCoordinator",
-    "TaskDistributor", 
-    "CollaborationEngine",
+    "TaskDispatcher", 
+    "CollaborationManager",
     "AgentMessenger",
     "AgentBase",
     "AgentRegistry",

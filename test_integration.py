@@ -141,11 +141,19 @@ class PowerAutomationIntegrationTest:
             router = SmartRouter()
             
             # 测试路由决策
-            test_request = {
-                "type": "development",
-                "description": "创建一个Web应用",
-                "complexity": "medium"
-            }
+            from PowerAutomation.smart_router_mcp.smart_router import RouteRequest
+            import uuid
+            
+            test_request = RouteRequest(
+                request_id=str(uuid.uuid4()),
+                content="创建一个Web应用",
+                context={
+                    "type": "development",
+                    "complexity": "medium"
+                },
+                priority=5,
+                required_capabilities=["development", "web"]
+            )
             
             route_result = await router.route_request(test_request)
             

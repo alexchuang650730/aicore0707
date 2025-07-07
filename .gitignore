@@ -1,0 +1,4 @@
+node_modules/
+claudeditor-ui/node_modules/
+venv/
+*/venv/

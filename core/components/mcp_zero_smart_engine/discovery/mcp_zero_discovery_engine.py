@@ -35,7 +35,7 @@ import subprocess
 import tempfile
 import shutil
 
-from ..models.tool_models import MCPTool, ToolCapability, ToolStatus, ToolCategory
+from ..models.tool_models import MCPTool, ToolCapability, ToolStatus
 
 logger = logging.getLogger(__name__)
 
@@ -815,7 +815,7 @@ class MCPZeroDiscoveryEngine:
         return capabilities
     
     async def _classify_tool(self, tool_data: Dict[str, Any], 
-                           capabilities: List[ToolCapability]) -> ToolCategory:
+                           capabilities: List[ToolCapability]) -> str:
         """分类工具"""
         # 计算每个分类的得分
         category_scores = {}
@@ -833,18 +833,18 @@ class MCPZeroDiscoveryEngine:
         if category_scores:
             best_category = max(category_scores, key=category_scores.get)
             
-            # 映射到ToolCategory枚举
+            # 映射到工具分类字符串
             category_mapping = {
-                "development": ToolCategory.DEVELOPMENT,
-                "data_science": ToolCategory.DATA_SCIENCE,
-                "web_automation": ToolCategory.WEB_AUTOMATION,
-                "communication": ToolCategory.COMMUNICATION,
-                "system_admin": ToolCategory.SYSTEM_ADMIN
+                "development": "development",
+                "data_science": "data_science", 
+                "web_automation": "web_automation",
+                "communication": "communication",
+                "system_admin": "system_admin"
             }
             
-            return category_mapping.get(best_category, ToolCategory.UTILITY)
+            return category_mapping.get(best_category, "utility")
         
-        return ToolCategory.UTILITY
+        return "utility"
     
     async def _register_tool(self, tool: MCPTool):
         """注册工具"""
@@ -855,7 +855,7 @@ class MCPZeroDiscoveryEngine:
         
         logger.debug(f"注册工具: {tool.name} ({tool.tool_id})")
     
-    async def get_discovered_tools(self, category: ToolCategory = None, 
+    async def get_discovered_tools(self, category: str = None, 
                                  status: ToolStatus = None,
                                  limit: int = None) -> List[MCPTool]:
         """获取发现的工具"""

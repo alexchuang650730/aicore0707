@@ -5,7 +5,7 @@ AI生态系统深度集成
 1. MemoryOS - 三层记忆架构系统
 2. Agent Zero - 有机智能体框架
 3. Trae Agent - 多模型协作系统
-4. Claudia - 专业GUI管理系统
+4. ClaudEditor - 专业AI代码编辑器
 5. Zen MCP - 14种专业开发工具生态
 6. 统一AI协调器 - 中央管理和协调
 

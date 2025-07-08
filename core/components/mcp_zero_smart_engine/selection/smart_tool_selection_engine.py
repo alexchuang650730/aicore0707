@@ -32,7 +32,7 @@ import hashlib
 from pathlib import Path
 import math
 
-from ..models.tool_models import MCPTool, TaskRequirement, ToolRecommendation, ToolCapability, ToolCategory, ToolStatus
+from ..models.tool_models import MCPTool, TaskRequirement, ToolRecommendation, ToolCapability, ToolStatus
 
 logger = logging.getLogger(__name__)
 

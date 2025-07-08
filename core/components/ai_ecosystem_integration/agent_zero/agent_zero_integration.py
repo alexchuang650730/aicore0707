@@ -1,65 +1,82 @@
 #!/usr/bin/env python3
 """
-PowerAutomation 4.1 Agent Zero集成组件
+Agent Zero有机智能体完整深度集成
 
-Agent Zero是一个有机智能体框架，具有自学习能力和动态适应性。
-本模块实现了Agent Zero与PowerAutomation + ClaudEditor的深度集成。
+基于Agent Zero的有机智能体架构，为PowerAutomation 4.1提供自学习智能体网络。
+实现5个专业智能体的协作、自学习能力、动态适应性和知识图谱构建。
 
-Agent Zero核心特性：
-1. 有机智能体架构 - 自然演化的智能体系统
-2. 自学习能力 - 从交互中持续学习和改进
-3. 动态适应性 - 根据环境变化自动调整行为
-4. 多智能体协作 - 支持智能体间的协作和通信
-5. 知识图谱构建 - 自动构建和维护知识网络
+主要功能：
+- 5个专业智能体（代码分析、生成、调试、优化、协作）
+- 自学习能力和持续改进
+- 动态适应性和策略调整
+- 多智能体协作和知识共享
+- 知识图谱构建和维护
+- 有机进化和能力增长
+
+技术特色：
+- 有机智能体架构
+- 自学习和适应算法
+- 多智能体协作网络
+- 知识驱动的决策
+- 持续学习和改进
 
 作者: PowerAutomation Team
-版本: 4.1
+版本: 4.1.0
 日期: 2025-01-07
 """
 
 import asyncio
 import json
-import time
 import uuid
-import random
-import math
+import logging
+import time
+import numpy as np
 from datetime import datetime, timedelta
-from typing import Dict, List, Any, Optional, Tuple, Union, Callable
+from typing import Dict, List, Any, Optional, Tuple, Set, Union, Callable
 from dataclasses import dataclass, field, asdict
 from enum import Enum
-import logging
 from pathlib import Path
-import networkx as nx
+import pickle
+import hashlib
+import sqlite3
+from collections import defaultdict, deque
+import threading
+import math
+import random
+from abc import ABC, abstractmethod
 
-# 配置日志
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+class AgentType(Enum):
+    """智能体类型"""
+    CODE_ANALYZER = "code_analyzer"  # 代码分析智能体
+    CODE_GENERATOR = "code_generator"  # 代码生成智能体
+    DEBUGGER = "debugger"  # 调试智能体
+    OPTIMIZER = "optimizer"  # 优化智能体
+    COLLABORATOR = "collaborator"  # 协作智能体
+
+class LearningStrategy(Enum):
+    """学习策略"""
+    REINFORCEMENT = "reinforcement"  # 强化学习
+    IMITATION = "imitation"  # 模仿学习
+    EXPLORATION = "exploration"  # 探索学习
+    COLLABORATIVE = "collaborative"  # 协作学习
+    ADAPTIVE = "adaptive"  # 自适应学习
+
+class TaskComplexity(Enum):
+    """任务复杂度"""
+    SIMPLE = "simple"
+    MEDIUM = "medium"
+    COMPLEX = "complex"
+    EXPERT = "expert"
 
 class AgentState(Enum):
     """智能体状态"""
-    INITIALIZING = "initializing"
-    ACTIVE = "active"
+    IDLE = "idle"
     LEARNING = "learning"
-    ADAPTING = "adapting"
+    WORKING = "working"
     COLLABORATING = "collaborating"
-    DORMANT = "dormant"
-    ERROR = "error"
-
-class LearningMode(Enum):
-    """学习模式"""
-    SUPERVISED = "supervised"        # 监督学习
-    UNSUPERVISED = "unsupervised"   # 无监督学习
-    REINFORCEMENT = "reinforcement" # 强化学习
-    IMITATION = "imitation"         # 模仿学习
-    SELF_SUPERVISED = "self_supervised" # 自监督学习
-
-class AdaptationStrategy(Enum):
-    """适应策略"""
-    CONSERVATIVE = "conservative"    # 保守策略
-    AGGRESSIVE = "aggressive"       # 激进策略
-    BALANCED = "balanced"           # 平衡策略
-    EXPLORATORY = "exploratory"     # 探索策略
-    EXPLOITATIVE = "exploitative"   # 利用策略
+    EVOLVING = "evolving"
 
 @dataclass
 class AgentCapability:
@@ -67,1066 +84,1908 @@ class AgentCapability:
     capability_id: str
     name: str
     description: str
-    proficiency_level: float  # 0.0 - 1.0
-    learning_rate: float
-    adaptation_speed: float
+    proficiency: float  # 熟练度 0-1
+    confidence: float  # 置信度 0-1
     usage_count: int = 0
     success_rate: float = 0.0
     last_used: Optional[datetime] = None
-    metadata: Dict[str, Any] = field(default_factory=dict)
-    
-    def update_proficiency(self, success: bool, learning_rate: float = None):
-        """更新能力熟练度"""
-        if learning_rate is None:
-            learning_rate = self.learning_rate
-        
-        self.usage_count += 1
-        
-        # 更新成功率
-        if self.usage_count == 1:
-            self.success_rate = 1.0 if success else 0.0
-        else:
-            self.success_rate = ((self.success_rate * (self.usage_count - 1)) + 
-                               (1.0 if success else 0.0)) / self.usage_count
-        
-        # 更新熟练度
-        if success:
-            improvement = learning_rate * (1.0 - self.proficiency_level)
-            self.proficiency_level = min(1.0, self.proficiency_level + improvement)
-        else:
-            degradation = learning_rate * 0.1  # 失败时轻微降低
-            self.proficiency_level = max(0.0, self.proficiency_level - degradation)
-        
-        self.last_used = datetime.now()
+    learning_rate: float = 0.1
+    decay_rate: float = 0.01
 
 @dataclass
-class LearningExperience:
-    """学习经验"""
-    experience_id: str
+class Task:
+    """任务"""
+    task_id: str
+    task_type: str
+    description: str
+    complexity: TaskComplexity
+    requirements: Dict[str, Any]
+    context: Dict[str, Any] = field(default_factory=dict)
+    deadline: Optional[datetime] = None
+    priority: int = 1
+    assigned_agents: List[str] = field(default_factory=list)
+    status: str = "pending"
+    created_at: datetime = field(default_factory=datetime.now)
+
+@dataclass
+class LearningEvent:
+    """学习事件"""
+    event_id: str
     agent_id: str
-    context: Dict[str, Any]
-    action_taken: str
-    outcome: Dict[str, Any]
-    success: bool
-    reward: float
-    learning_mode: LearningMode
-    timestamp: datetime
-    metadata: Dict[str, Any] = field(default_factory=dict)
+    event_type: str
+    task_id: str
+    outcome: str
+    performance_score: float
+    learning_data: Dict[str, Any]
+    timestamp: datetime = field(default_factory=datetime.now)
+    context: Dict[str, Any] = field(default_factory=dict)
+
+@dataclass
+class CollaborationRecord:
+    """协作记录"""
+    collaboration_id: str
+    participating_agents: List[str]
+    task_id: str
+    collaboration_type: str
+    outcome: str
+    efficiency_score: float
+    knowledge_shared: Dict[str, Any]
+    timestamp: datetime = field(default_factory=datetime.now)
 
 @dataclass
 class KnowledgeNode:
     """知识节点"""
     node_id: str
     content: Dict[str, Any]
-    node_type: str  # concept, fact, rule, pattern
+    node_type: str
     confidence: float
-    connections: List[str] = field(default_factory=list)
-    creation_time: datetime = field(default_factory=datetime.now)
-    last_accessed: datetime = field(default_factory=datetime.now)
+    source_agent: str
+    connections: Set[str] = field(default_factory=set)
     access_count: int = 0
+    last_accessed: Optional[datetime] = None
+    created_at: datetime = field(default_factory=datetime.now)
 
-class OrganicAgent:
-    """有机智能体"""
+class BaseAgent(ABC):
+    """基础智能体抽象类"""
     
-    def __init__(self, agent_id: str, agent_type: str = "general", 
-                 initial_capabilities: List[str] = None):
-        """初始化有机智能体"""
+    def __init__(self, agent_id: str, agent_type: AgentType, config: Dict[str, Any]):
         self.agent_id = agent_id
         self.agent_type = agent_type
-        self.state = AgentState.INITIALIZING
-        self.learning_mode = LearningMode.SELF_SUPERVISED
-        self.adaptation_strategy = AdaptationStrategy.BALANCED
+        self.config = config
+        self.state = AgentState.IDLE
         
-        # 智能体能力
+        # 能力系统
         self.capabilities: Dict[str, AgentCapability] = {}
-        self._initialize_capabilities(initial_capabilities or [])
-        
-        # 学习系统
-        self.experiences: List[LearningExperience] = []
-        self.knowledge_graph = nx.DiGraph()
-        self.learning_rate = 0.1
-        self.adaptation_threshold = 0.7
-        
-        # 协作系统
-        self.collaborators: Dict[str, 'OrganicAgent'] = {}
-        self.communication_history: List[Dict[str, Any]] = []
+        self.learning_strategy = LearningStrategy.ADAPTIVE
+        self.learning_rate = config.get("learning_rate", 0.1)
         
         # 性能指标
-        self.performance_metrics = {
-            "total_tasks": 0,
-            "successful_tasks": 0,
-            "learning_episodes": 0,
-            "adaptation_events": 0,
-            "collaboration_sessions": 0,
-            "knowledge_nodes": 0
-        }
+        self.performance_history: List[float] = []
+        self.task_success_rate = 0.0
+        self.collaboration_score = 0.0
+        self.adaptation_score = 0.0
         
-        # 自我评估
-        self.self_assessment = {
-            "overall_competence": 0.5,
-            "learning_efficiency": 0.5,
-            "adaptation_speed": 0.5,
-            "collaboration_ability": 0.5
-        }
+        # 学习和记忆
+        self.experience_buffer: deque = deque(maxlen=1000)
+        self.knowledge_base: Dict[str, Any] = {}
+        self.skill_tree: Dict[str, float] = {}
         
-        self.state = AgentState.ACTIVE
-        logger.info(f"有机智能体 {agent_id} 初始化完成")
+        # 协作网络
+        self.collaboration_partners: Set[str] = set()
+        self.trust_scores: Dict[str, float] = {}
+        
+        # 进化参数
+        self.generation = 0
+        self.mutation_rate = config.get("mutation_rate", 0.05)
+        self.evolution_threshold = config.get("evolution_threshold", 0.8)
+        
+        logger.info(f"初始化智能体: {agent_id} ({agent_type.value})")
     
-    def _initialize_capabilities(self, capability_names: List[str]):
-        """初始化智能体能力"""
-        default_capabilities = [
-            "problem_solving", "pattern_recognition", "decision_making",
-            "communication", "learning", "adaptation"
-        ]
-        
-        all_capabilities = list(set(default_capabilities + capability_names))
-        
-        for cap_name in all_capabilities:
-            capability = AgentCapability(
-                capability_id=str(uuid.uuid4()),
-                name=cap_name,
-                description=f"智能体的{cap_name}能力",
-                proficiency_level=random.uniform(0.3, 0.7),  # 随机初始熟练度
-                learning_rate=random.uniform(0.05, 0.15),
-                adaptation_speed=random.uniform(0.1, 0.3)
-            )
-            self.capabilities[cap_name] = capability
-    
-    async def execute_task(self, task: Dict[str, Any]) -> Dict[str, Any]:
+    @abstractmethod
+    async def execute_task(self, task: Task) -> Dict[str, Any]:
         """执行任务"""
-        self.state = AgentState.ACTIVE
-        start_time = time.time()
+        pass
+    
+    @abstractmethod
+    async def learn_from_experience(self, experience: Dict[str, Any]) -> bool:
+        """从经验中学习"""
+        pass
+    
+    async def update_capability(self, capability_id: str, performance_score: float):
+        """更新能力"""
+        if capability_id not in self.capabilities:
+            return
         
-        # 分析任务需求
-        required_capabilities = self._analyze_task_requirements(task)
+        capability = self.capabilities[capability_id]
         
-        # 评估自身能力
-        capability_assessment = self._assess_capabilities(required_capabilities)
+        # 更新熟练度
+        old_proficiency = capability.proficiency
+        learning_delta = self.learning_rate * (performance_score - old_proficiency)
+        capability.proficiency = max(0.0, min(1.0, old_proficiency + learning_delta))
         
-        # 决定执行策略
-        execution_strategy = self._determine_execution_strategy(
-            task, capability_assessment
-        )
+        # 更新置信度
+        capability.confidence = (capability.confidence * 0.9 + performance_score * 0.1)
         
-        # 执行任务
+        # 更新使用统计
+        capability.usage_count += 1
+        capability.last_used = datetime.now()
+        
+        # 更新成功率
+        if capability.usage_count == 1:
+            capability.success_rate = performance_score
+        else:
+            capability.success_rate = (capability.success_rate * 0.8 + performance_score * 0.2)
+        
+        logger.debug(f"更新能力 {capability_id}: 熟练度 {old_proficiency:.3f} -> {capability.proficiency:.3f}")
+    
+    async def collaborate_with(self, other_agent_id: str, task: Task) -> Dict[str, Any]:
+        """与其他智能体协作"""
+        self.state = AgentState.COLLABORATING
+        
+        # 记录协作伙伴
+        self.collaboration_partners.add(other_agent_id)
+        
+        # 初始化信任分数
+        if other_agent_id not in self.trust_scores:
+            self.trust_scores[other_agent_id] = 0.5
+        
+        # 协作逻辑（由子类实现具体协作策略）
+        collaboration_result = await self._perform_collaboration(other_agent_id, task)
+        
+        # 更新信任分数
+        if collaboration_result.get("success", False):
+            self.trust_scores[other_agent_id] = min(1.0, self.trust_scores[other_agent_id] + 0.1)
+        else:
+            self.trust_scores[other_agent_id] = max(0.0, self.trust_scores[other_agent_id] - 0.05)
+        
+        self.state = AgentState.IDLE
+        return collaboration_result
+    
+    async def _perform_collaboration(self, other_agent_id: str, task: Task) -> Dict[str, Any]:
+        """执行协作（基础实现）"""
+        return {
+            "success": True,
+            "contribution": 0.5,
+            "knowledge_gained": {},
+            "efficiency_boost": 0.2
+        }
+    
+    async def evolve(self) -> bool:
+        """进化智能体"""
+        if self.task_success_rate < self.evolution_threshold:
+            return False
+        
+        self.state = AgentState.EVOLVING
+        
+        # 增加代数
+        self.generation += 1
+        
+        # 能力变异
+        for capability in self.capabilities.values():
+            if random.random() < self.mutation_rate:
+                mutation = random.gauss(0, 0.1)
+                capability.proficiency = max(0.0, min(1.0, capability.proficiency + mutation))
+        
+        # 学习策略进化
+        if random.random() < self.mutation_rate:
+            strategies = list(LearningStrategy)
+            self.learning_strategy = random.choice(strategies)
+        
+        # 学习率自适应
+        if self.task_success_rate > 0.9:
+            self.learning_rate *= 0.95  # 降低学习率
+        elif self.task_success_rate < 0.7:
+            self.learning_rate *= 1.05  # 提高学习率
+        
+        self.learning_rate = max(0.01, min(0.5, self.learning_rate))
+        
+        self.state = AgentState.IDLE
+        logger.info(f"智能体 {self.agent_id} 进化到第 {self.generation} 代")
+        return True
+    
+    def get_performance_metrics(self) -> Dict[str, float]:
+        """获取性能指标"""
+        return {
+            "task_success_rate": self.task_success_rate,
+            "collaboration_score": self.collaboration_score,
+            "adaptation_score": self.adaptation_score,
+            "average_performance": np.mean(self.performance_history) if self.performance_history else 0.0,
+            "learning_rate": self.learning_rate,
+            "generation": self.generation,
+            "capability_count": len(self.capabilities),
+            "collaboration_partners": len(self.collaboration_partners)
+        }
+
+class CodeAnalyzerAgent(BaseAgent):
+    """代码分析智能体"""
+    
+    def __init__(self, agent_id: str, config: Dict[str, Any]):
+        super().__init__(agent_id, AgentType.CODE_ANALYZER, config)
+        
+        # 初始化代码分析能力
+        self.capabilities = {
+            "syntax_analysis": AgentCapability(
+                "syntax_analysis", "语法分析", "分析代码语法结构", 0.7, 0.8
+            ),
+            "complexity_analysis": AgentCapability(
+                "complexity_analysis", "复杂度分析", "分析代码复杂度", 0.6, 0.7
+            ),
+            "pattern_recognition": AgentCapability(
+                "pattern_recognition", "模式识别", "识别代码模式和反模式", 0.5, 0.6
+            ),
+            "dependency_analysis": AgentCapability(
+                "dependency_analysis", "依赖分析", "分析代码依赖关系", 0.6, 0.7
+            ),
+            "security_analysis": AgentCapability(
+                "security_analysis", "安全分析", "检测安全漏洞", 0.4, 0.5
+            )
+        }
+    
+    async def execute_task(self, task: Task) -> Dict[str, Any]:
+        """执行代码分析任务"""
+        self.state = AgentState.WORKING
+        
         try:
-            result = await self._execute_with_strategy(task, execution_strategy)
-            success = result.get("success", False)
+            code_content = task.requirements.get("code", "")
+            analysis_type = task.requirements.get("analysis_type", "comprehensive")
             
-            # 记录学习经验
-            await self._record_experience(task, result, success)
+            results = {}
             
-            # 更新能力
-            self._update_capabilities(required_capabilities, success)
+            # 语法分析
+            if analysis_type in ["comprehensive", "syntax"]:
+                syntax_result = await self._analyze_syntax(code_content)
+                results["syntax_analysis"] = syntax_result
+                await self.update_capability("syntax_analysis", syntax_result.get("score", 0.5))
             
-            # 更新性能指标
-            self.performance_metrics["total_tasks"] += 1
-            if success:
-                self.performance_metrics["successful_tasks"] += 1
+            # 复杂度分析
+            if analysis_type in ["comprehensive", "complexity"]:
+                complexity_result = await self._analyze_complexity(code_content)
+                results["complexity_analysis"] = complexity_result
+                await self.update_capability("complexity_analysis", complexity_result.get("score", 0.5))
             
-            # 触发自适应
-            if self._should_adapt():
-                await self._trigger_adaptation()
+            # 模式识别
+            if analysis_type in ["comprehensive", "patterns"]:
+                pattern_result = await self._recognize_patterns(code_content)
+                results["pattern_recognition"] = pattern_result
+                await self.update_capability("pattern_recognition", pattern_result.get("score", 0.5))
             
-            execution_time = time.time() - start_time
+            # 依赖分析
+            if analysis_type in ["comprehensive", "dependencies"]:
+                dependency_result = await self._analyze_dependencies(code_content)
+                results["dependency_analysis"] = dependency_result
+                await self.update_capability("dependency_analysis", dependency_result.get("score", 0.5))
+            
+            # 安全分析
+            if analysis_type in ["comprehensive", "security"]:
+                security_result = await self._analyze_security(code_content)
+                results["security_analysis"] = security_result
+                await self.update_capability("security_analysis", security_result.get("score", 0.5))
+            
+            # 计算总体性能
+            overall_score = np.mean([r.get("score", 0.5) for r in results.values()])
+            self.performance_history.append(overall_score)
+            
+            # 更新成功率
+            if len(self.performance_history) == 1:
+                self.task_success_rate = overall_score
+            else:
+                self.task_success_rate = self.task_success_rate * 0.9 + overall_score * 0.1
+            
+            self.state = AgentState.IDLE
             
             return {
-                "success": success,
-                "result": result,
-                "execution_time": execution_time,
-                "capabilities_used": required_capabilities,
-                "learning_occurred": True,
-                "agent_state": self.state.value
+                "success": True,
+                "results": results,
+                "overall_score": overall_score,
+                "agent_id": self.agent_id,
+                "task_id": task.task_id
             }
             
         except Exception as e:
-            logger.error(f"智能体 {self.agent_id} 执行任务失败: {e}")
-            await self._record_experience(task, {"error": str(e)}, False)
-            
+            logger.error(f"代码分析任务失败: {e}")
+            self.state = AgentState.IDLE
             return {
                 "success": False,
                 "error": str(e),
-                "execution_time": time.time() - start_time,
-                "agent_state": AgentState.ERROR.value
+                "agent_id": self.agent_id,
+                "task_id": task.task_id
             }
     
-    def _analyze_task_requirements(self, task: Dict[str, Any]) -> List[str]:
-        """分析任务需求"""
-        task_type = task.get("type", "general")
-        task_complexity = task.get("complexity", "medium")
+    async def _analyze_syntax(self, code: str) -> Dict[str, Any]:
+        """语法分析"""
+        # 简化实现：基于代码长度和结构的启发式分析
+        lines = code.split('\n')
+        non_empty_lines = [line for line in lines if line.strip()]
         
-        # 基于任务类型映射所需能力
-        capability_mapping = {
-            "code_analysis": ["problem_solving", "pattern_recognition"],
-            "code_generation": ["problem_solving", "decision_making"],
-            "debugging": ["problem_solving", "pattern_recognition", "decision_making"],
-            "optimization": ["problem_solving", "pattern_recognition"],
-            "collaboration": ["communication", "decision_making"],
-            "learning": ["learning", "adaptation"],
-            "general": ["problem_solving", "decision_making"]
+        # 基础语法检查
+        syntax_score = 0.8  # 基础分数
+        
+        # 检查缩进一致性
+        indentations = [len(line) - len(line.lstrip()) for line in non_empty_lines if line.strip()]
+        if indentations and len(set(indentations)) <= 3:
+            syntax_score += 0.1
+        
+        # 检查括号匹配
+        brackets = {'(': ')', '[': ']', '{': '}'}
+        stack = []
+        bracket_matched = True
+        
+        for char in code:
+            if char in brackets:
+                stack.append(char)
+            elif char in brackets.values():
+                if not stack or brackets.get(stack.pop()) != char:
+                    bracket_matched = False
+                    break
+        
+        if bracket_matched and not stack:
+            syntax_score += 0.1
+        
+        return {
+            "score": min(1.0, syntax_score),
+            "line_count": len(lines),
+            "non_empty_lines": len(non_empty_lines),
+            "indentation_consistent": len(set(indentations)) <= 3 if indentations else True,
+            "brackets_matched": bracket_matched,
+            "issues": []
         }
-        
-        required_caps = capability_mapping.get(task_type, ["problem_solving"])
-        
-        # 根据复杂度调整
-        if task_complexity == "high":
-            required_caps.extend(["adaptation", "learning"])
-        
-        return list(set(required_caps))
     
-    def _assess_capabilities(self, required_capabilities: List[str]) -> Dict[str, float]:
-        """评估能力匹配度"""
-        assessment = {}
+    async def _analyze_complexity(self, code: str) -> Dict[str, Any]:
+        """复杂度分析"""
+        lines = code.split('\n')
+        non_empty_lines = [line for line in lines if line.strip()]
         
-        for cap_name in required_capabilities:
-            if cap_name in self.capabilities:
-                capability = self.capabilities[cap_name]
-                # 综合考虑熟练度和成功率
-                score = (capability.proficiency_level * 0.7 + 
-                        capability.success_rate * 0.3)
-                assessment[cap_name] = score
-            else:
-                # 缺失能力，需要学习
-                assessment[cap_name] = 0.0
+        # 圈复杂度估算
+        complexity_keywords = ['if', 'elif', 'else', 'for', 'while', 'try', 'except', 'with']
+        complexity_count = 0
         
-        return assessment
-    
-    def _determine_execution_strategy(self, task: Dict[str, Any], 
-                                    assessment: Dict[str, float]) -> Dict[str, Any]:
-        """确定执行策略"""
-        avg_capability = sum(assessment.values()) / len(assessment) if assessment else 0.0
+        for line in non_empty_lines:
+            for keyword in complexity_keywords:
+                if keyword in line:
+                    complexity_count += 1
         
-        strategy = {
-            "approach": "direct",
-            "confidence": avg_capability,
-            "need_collaboration": False,
-            "need_learning": False
-        }
-        
-        # 如果能力不足，考虑协作或学习
-        if avg_capability < 0.5:
-            strategy["need_collaboration"] = True
-            strategy["approach"] = "collaborative"
-        
-        if avg_capability < 0.3:
-            strategy["need_learning"] = True
-            strategy["approach"] = "learning_based"
-        
-        # 根据适应策略调整
-        if self.adaptation_strategy == AdaptationStrategy.EXPLORATORY:
-            strategy["exploration_factor"] = 0.3
-        elif self.adaptation_strategy == AdaptationStrategy.CONSERVATIVE:
-            strategy["risk_tolerance"] = 0.2
-        
-        return strategy
-    
-    async def _execute_with_strategy(self, task: Dict[str, Any], 
-                                   strategy: Dict[str, Any]) -> Dict[str, Any]:
-        """根据策略执行任务"""
-        approach = strategy["approach"]
-        
-        if approach == "collaborative" and strategy.get("need_collaboration"):
-            return await self._execute_collaboratively(task)
-        elif approach == "learning_based" and strategy.get("need_learning"):
-            return await self._execute_with_learning(task)
+        # 计算复杂度分数（越低越好）
+        if len(non_empty_lines) == 0:
+            complexity_score = 1.0
         else:
-            return await self._execute_directly(task)
-    
-    async def _execute_directly(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """直接执行任务"""
-        # 模拟任务执行
-        task_complexity = task.get("complexity", "medium")
+            complexity_ratio = complexity_count / len(non_empty_lines)
+            complexity_score = max(0.1, 1.0 - complexity_ratio)
         
-        # 基于能力计算成功概率
-        required_caps = self._analyze_task_requirements(task)
-        capability_scores = [
-            self.capabilities[cap].proficiency_level 
-            for cap in required_caps if cap in self.capabilities
-        ]
-        
-        avg_capability = sum(capability_scores) / len(capability_scores) if capability_scores else 0.5
-        
-        # 复杂度影响成功率
-        complexity_factor = {"low": 1.2, "medium": 1.0, "high": 0.8}.get(task_complexity, 1.0)
-        success_probability = min(1.0, avg_capability * complexity_factor)
-        
-        success = random.random() < success_probability
-        
-        # 模拟执行时间
-        execution_time = random.uniform(1.0, 5.0)
-        await asyncio.sleep(0.1)  # 模拟异步执行
-        
-        result = {
-            "success": success,
-            "output": f"任务执行{'成功' if success else '失败'}",
-            "execution_method": "direct",
-            "capability_utilization": avg_capability,
-            "execution_time": execution_time
+        return {
+            "score": complexity_score,
+            "cyclomatic_complexity": complexity_count,
+            "lines_of_code": len(non_empty_lines),
+            "complexity_ratio": complexity_count / len(non_empty_lines) if non_empty_lines else 0,
+            "complexity_level": "low" if complexity_count < 5 else "medium" if complexity_count < 15 else "high"
         }
-        
-        return result
     
-    async def _execute_collaboratively(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """协作执行任务"""
-        # 寻找合适的协作者
-        collaborator = self._find_best_collaborator(task)
+    async def _recognize_patterns(self, code: str) -> Dict[str, Any]:
+        """模式识别"""
+        patterns_found = []
+        pattern_score = 0.5
         
-        if collaborator:
-            # 与协作者共同执行
-            self.performance_metrics["collaboration_sessions"] += 1
-            
-            # 模拟协作执行
-            my_contribution = await self._execute_directly(task)
-            collaborator_contribution = await collaborator._execute_directly(task)
-            
-            # 合并结果
-            combined_success_rate = (
-                (my_contribution.get("capability_utilization", 0.5) + 
-                 collaborator_contribution.get("capability_utilization", 0.5)) / 2
-            )
-            
-            success = random.random() < min(1.0, combined_success_rate * 1.3)  # 协作加成
-            
-            result = {
-                "success": success,
-                "output": f"协作任务执行{'成功' if success else '失败'}",
-                "execution_method": "collaborative",
-                "collaborator": collaborator.agent_id,
-                "my_contribution": my_contribution,
-                "collaborator_contribution": collaborator_contribution,
-                "collaboration_bonus": 0.3
-            }
-            
-            # 记录协作历史
-            self.communication_history.append({
-                "type": "collaboration",
-                "partner": collaborator.agent_id,
-                "task": task,
-                "result": result,
-                "timestamp": datetime.now()
-            })
-            
-            return result
+        # 检查常见设计模式
+        if "class" in code and "__init__" in code:
+            patterns_found.append("object_oriented")
+            pattern_score += 0.1
+        
+        if "def " in code:
+            patterns_found.append("functional")
+            pattern_score += 0.1
+        
+        if "import " in code or "from " in code:
+            patterns_found.append("modular")
+            pattern_score += 0.1
+        
+        if "try:" in code and "except" in code:
+            patterns_found.append("error_handling")
+            pattern_score += 0.1
+        
+        if "with " in code:
+            patterns_found.append("context_management")
+            pattern_score += 0.1
+        
+        return {
+            "score": min(1.0, pattern_score),
+            "patterns_found": patterns_found,
+            "pattern_count": len(patterns_found),
+            "code_style": "good" if len(patterns_found) >= 3 else "basic"
+        }
+    
+    async def _analyze_dependencies(self, code: str) -> Dict[str, Any]:
+        """依赖分析"""
+        import_lines = [line for line in code.split('\n') if line.strip().startswith(('import ', 'from '))]
+        
+        dependencies = []
+        for line in import_lines:
+            if line.strip().startswith('import '):
+                dep = line.strip()[7:].split()[0]
+                dependencies.append(dep)
+            elif line.strip().startswith('from '):
+                dep = line.strip()[5:].split()[0]
+                dependencies.append(dep)
+        
+        # 依赖分数（适中的依赖数量最好）
+        dep_count = len(set(dependencies))
+        if dep_count == 0:
+            dependency_score = 0.7  # 无依赖可能过于简单
+        elif dep_count <= 5:
+            dependency_score = 1.0  # 适中的依赖数量
+        elif dep_count <= 10:
+            dependency_score = 0.8  # 较多依赖
         else:
-            # 没有合适的协作者，降级为直接执行
-            return await self._execute_directly(task)
+            dependency_score = 0.6  # 过多依赖
+        
+        return {
+            "score": dependency_score,
+            "dependencies": list(set(dependencies)),
+            "dependency_count": dep_count,
+            "import_lines": len(import_lines),
+            "dependency_level": "none" if dep_count == 0 else "low" if dep_count <= 3 else "medium" if dep_count <= 7 else "high"
+        }
     
-    async def _execute_with_learning(self, task: Dict[str, Any]) -> Dict[str, Any]:
-        """带学习的执行任务"""
+    async def _analyze_security(self, code: str) -> Dict[str, Any]:
+        """安全分析"""
+        security_issues = []
+        security_score = 1.0
+        
+        # 检查常见安全问题
+        dangerous_functions = ['eval', 'exec', 'input', 'raw_input']
+        for func in dangerous_functions:
+            if func + '(' in code:
+                security_issues.append(f"使用了危险函数: {func}")
+                security_score -= 0.2
+        
+        # 检查硬编码密码
+        if any(keyword in code.lower() for keyword in ['password', 'secret', 'key']):
+            if any(char in code for char in ['"', "'"]):
+                security_issues.append("可能存在硬编码密码")
+                security_score -= 0.1
+        
+        # 检查SQL注入风险
+        if 'sql' in code.lower() and '%' in code:
+            security_issues.append("可能存在SQL注入风险")
+            security_score -= 0.2
+        
+        security_score = max(0.0, security_score)
+        
+        return {
+            "score": security_score,
+            "security_issues": security_issues,
+            "issue_count": len(security_issues),
+            "security_level": "high" if security_score >= 0.8 else "medium" if security_score >= 0.6 else "low"
+        }
+    
+    async def learn_from_experience(self, experience: Dict[str, Any]) -> bool:
+        """从经验中学习"""
         self.state = AgentState.LEARNING
         
-        # 先尝试直接执行
-        initial_result = await self._execute_directly(task)
-        
-        # 如果失败，进行学习
-        if not initial_result.get("success", False):
-            learning_result = await self._learn_from_failure(task, initial_result)
+        try:
+            # 添加到经验缓冲区
+            self.experience_buffer.append(experience)
             
-            # 再次尝试执行
-            if learning_result.get("learning_success", False):
-                retry_result = await self._execute_directly(task)
-                
-                result = {
-                    "success": retry_result.get("success", False),
-                    "output": f"学习后任务执行{'成功' if retry_result.get('success') else '失败'}",
-                    "execution_method": "learning_based",
-                    "initial_attempt": initial_result,
-                    "learning_phase": learning_result,
-                    "retry_attempt": retry_result,
-                    "learning_improvement": True
-                }
-                
-                self.performance_metrics["learning_episodes"] += 1
-                return result
-        
-        return initial_result
-    
-    def _find_best_collaborator(self, task: Dict[str, Any]) -> Optional['OrganicAgent']:
-        """寻找最佳协作者"""
-        if not self.collaborators:
-            return None
-        
-        required_capabilities = self._analyze_task_requirements(task)
-        best_collaborator = None
-        best_score = 0.0
-        
-        for collaborator in self.collaborators.values():
-            # 评估协作者的能力匹配度
-            score = 0.0
-            for cap_name in required_capabilities:
-                if cap_name in collaborator.capabilities:
-                    score += collaborator.capabilities[cap_name].proficiency_level
+            # 分析经验模式
+            task_type = experience.get("task_type", "unknown")
+            performance = experience.get("performance", 0.5)
             
-            avg_score = score / len(required_capabilities) if required_capabilities else 0.0
+            # 更新知识库
+            if task_type not in self.knowledge_base:
+                self.knowledge_base[task_type] = {
+                    "success_patterns": [],
+                    "failure_patterns": [],
+                    "best_practices": []
+                }
             
-            if avg_score > best_score:
-                best_score = avg_score
-                best_collaborator = collaborator
-        
-        return best_collaborator if best_score > 0.6 else None
-    
-    async def _learn_from_failure(self, task: Dict[str, Any], 
-                                failure_result: Dict[str, Any]) -> Dict[str, Any]:
-        """从失败中学习"""
-        required_capabilities = self._analyze_task_requirements(task)
-        
-        # 分析失败原因
-        failure_analysis = self._analyze_failure(task, failure_result, required_capabilities)
-        
-        # 更新学习率
-        learning_improvements = {}
-        for cap_name in required_capabilities:
-            if cap_name in self.capabilities:
-                capability = self.capabilities[cap_name]
-                # 增加学习率以快速改进
-                old_proficiency = capability.proficiency_level
-                capability.learning_rate *= 1.2  # 增加学习率
-                capability.proficiency_level = min(1.0, capability.proficiency_level + 0.1)
-                
-                learning_improvements[cap_name] = {
-                    "old_proficiency": old_proficiency,
-                    "new_proficiency": capability.proficiency_level,
-                    "learning_rate_boost": 1.2
-                }
-            else:
-                # 创建新能力
-                new_capability = AgentCapability(
-                    capability_id=str(uuid.uuid4()),
-                    name=cap_name,
-                    description=f"从失败中学习的{cap_name}能力",
-                    proficiency_level=0.2,  # 从低水平开始
-                    learning_rate=0.2,     # 高学习率
-                    adaptation_speed=0.3
-                )
-                self.capabilities[cap_name] = new_capability
-                
-                learning_improvements[cap_name] = {
-                    "new_capability": True,
-                    "initial_proficiency": 0.2
-                }
-        
-        # 更新知识图谱
-        await self._update_knowledge_graph(task, failure_result, failure_analysis)
-        
-        return {
-            "learning_success": True,
-            "failure_analysis": failure_analysis,
-            "capability_improvements": learning_improvements,
-            "knowledge_updated": True
-        }
-    
-    def _analyze_failure(self, task: Dict[str, Any], failure_result: Dict[str, Any], 
-                        required_capabilities: List[str]) -> Dict[str, Any]:
-        """分析失败原因"""
-        analysis = {
-            "primary_cause": "capability_insufficient",
-            "capability_gaps": [],
-            "complexity_mismatch": False,
-            "resource_constraints": False
-        }
-        
-        # 分析能力缺口
-        for cap_name in required_capabilities:
-            if cap_name not in self.capabilities:
-                analysis["capability_gaps"].append({
-                    "capability": cap_name,
-                    "status": "missing"
-                })
-            elif self.capabilities[cap_name].proficiency_level < 0.5:
-                analysis["capability_gaps"].append({
-                    "capability": cap_name,
-                    "status": "insufficient",
-                    "current_level": self.capabilities[cap_name].proficiency_level
-                })
-        
-        # 分析复杂度匹配
-        task_complexity = task.get("complexity", "medium")
-        if task_complexity == "high" and self.self_assessment["overall_competence"] < 0.7:
-            analysis["complexity_mismatch"] = True
-        
-        return analysis
-    
-    async def _update_knowledge_graph(self, task: Dict[str, Any], 
-                                    result: Dict[str, Any], 
-                                    analysis: Dict[str, Any]):
-        """更新知识图谱"""
-        # 创建任务节点
-        task_node = KnowledgeNode(
-            node_id=f"task_{uuid.uuid4()}",
-            content={
-                "task_type": task.get("type", "general"),
-                "complexity": task.get("complexity", "medium"),
-                "requirements": task
-            },
-            node_type="task",
-            confidence=0.8
-        )
-        
-        # 创建结果节点
-        result_node = KnowledgeNode(
-            node_id=f"result_{uuid.uuid4()}",
-            content={
-                "success": result.get("success", False),
-                "execution_method": result.get("execution_method", "direct"),
-                "analysis": analysis
-            },
-            node_type="outcome",
-            confidence=0.9
-        )
-        
-        # 添加到知识图谱
-        self.knowledge_graph.add_node(task_node.node_id, **asdict(task_node))
-        self.knowledge_graph.add_node(result_node.node_id, **asdict(result_node))
-        self.knowledge_graph.add_edge(task_node.node_id, result_node.node_id, 
-                                    relation="produces")
-        
-        self.performance_metrics["knowledge_nodes"] += 2
-    
-    async def _record_experience(self, task: Dict[str, Any], 
-                               result: Dict[str, Any], success: bool):
-        """记录学习经验"""
-        experience = LearningExperience(
-            experience_id=str(uuid.uuid4()),
-            agent_id=self.agent_id,
-            context=task,
-            action_taken=result.get("execution_method", "direct"),
-            outcome=result,
-            success=success,
-            reward=1.0 if success else -0.5,
-            learning_mode=self.learning_mode,
-            timestamp=datetime.now()
-        )
-        
-        self.experiences.append(experience)
-        
-        # 限制经验数量
-        if len(self.experiences) > 1000:
-            self.experiences = self.experiences[-800:]  # 保留最近800个经验
-    
-    def _update_capabilities(self, required_capabilities: List[str], success: bool):
-        """更新能力"""
-        for cap_name in required_capabilities:
-            if cap_name in self.capabilities:
-                self.capabilities[cap_name].update_proficiency(success)
-    
-    def _should_adapt(self) -> bool:
-        """判断是否需要适应"""
-        # 基于最近的成功率决定是否适应
-        recent_experiences = self.experiences[-10:] if len(self.experiences) >= 10 else self.experiences
-        
-        if not recent_experiences:
+            # 根据性能更新模式
+            if performance > 0.7:
+                self.knowledge_base[task_type]["success_patterns"].append(experience)
+            elif performance < 0.4:
+                self.knowledge_base[task_type]["failure_patterns"].append(experience)
+            
+            # 更新技能树
+            capabilities_used = experience.get("capabilities_used", [])
+            for capability in capabilities_used:
+                if capability in self.skill_tree:
+                    self.skill_tree[capability] += 0.1 * performance
+                else:
+                    self.skill_tree[capability] = 0.1 * performance
+            
+            self.state = AgentState.IDLE
+            return True
+            
+        except Exception as e:
+            logger.error(f"学习失败: {e}")
+            self.state = AgentState.IDLE
             return False
-        
-        recent_success_rate = sum(1 for exp in recent_experiences if exp.success) / len(recent_experiences)
-        
-        return recent_success_rate < self.adaptation_threshold
-    
-    async def _trigger_adaptation(self):
-        """触发适应"""
-        self.state = AgentState.ADAPTING
-        
-        # 分析最近的表现
-        performance_analysis = self._analyze_recent_performance()
-        
-        # 调整学习策略
-        if performance_analysis["success_rate"] < 0.3:
-            self.learning_mode = LearningMode.REINFORCEMENT
-            self.adaptation_strategy = AdaptationStrategy.EXPLORATORY
-        elif performance_analysis["success_rate"] < 0.6:
-            self.learning_mode = LearningMode.SELF_SUPERVISED
-            self.adaptation_strategy = AdaptationStrategy.BALANCED
-        else:
-            self.adaptation_strategy = AdaptationStrategy.EXPLOITATIVE
-        
-        # 调整能力参数
-        for capability in self.capabilities.values():
-            if capability.success_rate < 0.5:
-                capability.learning_rate *= 1.1  # 增加学习率
-            capability.adaptation_speed *= 1.05
-        
-        # 更新自我评估
-        self._update_self_assessment()
-        
-        self.performance_metrics["adaptation_events"] += 1
-        self.state = AgentState.ACTIVE
-        
-        logger.info(f"智能体 {self.agent_id} 完成适应调整")
-    
-    def _analyze_recent_performance(self) -> Dict[str, Any]:
-        """分析最近表现"""
-        recent_experiences = self.experiences[-20:] if len(self.experiences) >= 20 else self.experiences
-        
-        if not recent_experiences:
-            return {"success_rate": 0.5, "trend": "stable"}
-        
-        success_rate = sum(1 for exp in recent_experiences if exp.success) / len(recent_experiences)
-        
-        # 分析趋势
-        if len(recent_experiences) >= 10:
-            first_half = recent_experiences[:len(recent_experiences)//2]
-            second_half = recent_experiences[len(recent_experiences)//2:]
-            
-            first_half_rate = sum(1 for exp in first_half if exp.success) / len(first_half)
-            second_half_rate = sum(1 for exp in second_half if exp.success) / len(second_half)
-            
-            if second_half_rate > first_half_rate + 0.1:
-                trend = "improving"
-            elif second_half_rate < first_half_rate - 0.1:
-                trend = "declining"
-            else:
-                trend = "stable"
-        else:
-            trend = "insufficient_data"
-        
-        return {
-            "success_rate": success_rate,
-            "trend": trend,
-            "total_experiences": len(recent_experiences)
-        }
-    
-    def _update_self_assessment(self):
-        """更新自我评估"""
-        # 计算整体能力
-        if self.capabilities:
-            avg_proficiency = sum(cap.proficiency_level for cap in self.capabilities.values()) / len(self.capabilities)
-            self.self_assessment["overall_competence"] = avg_proficiency
-        
-        # 计算学习效率
-        if self.experiences:
-            recent_learning = [exp for exp in self.experiences[-50:] if exp.learning_mode != LearningMode.SUPERVISED]
-            if recent_learning:
-                learning_success_rate = sum(1 for exp in recent_learning if exp.success) / len(recent_learning)
-                self.self_assessment["learning_efficiency"] = learning_success_rate
-        
-        # 计算适应速度
-        adaptation_score = min(1.0, self.performance_metrics["adaptation_events"] / max(1, self.performance_metrics["total_tasks"]))
-        self.self_assessment["adaptation_speed"] = adaptation_score
-        
-        # 计算协作能力
-        if self.performance_metrics["collaboration_sessions"] > 0:
-            collaboration_score = self.performance_metrics["collaboration_sessions"] / max(1, self.performance_metrics["total_tasks"])
-            self.self_assessment["collaboration_ability"] = min(1.0, collaboration_score)
-    
-    async def add_collaborator(self, collaborator: 'OrganicAgent'):
-        """添加协作者"""
-        self.collaborators[collaborator.agent_id] = collaborator
-        collaborator.collaborators[self.agent_id] = self
-        
-        logger.info(f"智能体 {self.agent_id} 与 {collaborator.agent_id} 建立协作关系")
-    
-    async def communicate(self, target_agent_id: str, message: Dict[str, Any]) -> Dict[str, Any]:
-        """与其他智能体通信"""
-        if target_agent_id in self.collaborators:
-            target_agent = self.collaborators[target_agent_id]
-            
-            # 记录通信
-            communication_record = {
-                "type": "message",
-                "from": self.agent_id,
-                "to": target_agent_id,
-                "message": message,
-                "timestamp": datetime.now()
-            }
-            
-            self.communication_history.append(communication_record)
-            target_agent.communication_history.append(communication_record)
-            
-            # 模拟响应
-            response = await target_agent._process_communication(self.agent_id, message)
-            
-            return response
-        else:
-            return {"error": "目标智能体不在协作列表中"}
-    
-    async def _process_communication(self, sender_id: str, message: Dict[str, Any]) -> Dict[str, Any]:
-        """处理来自其他智能体的通信"""
-        message_type = message.get("type", "general")
-        
-        if message_type == "capability_inquiry":
-            # 返回能力信息
-            return {
-                "type": "capability_response",
-                "capabilities": {
-                    name: {
-                        "proficiency": cap.proficiency_level,
-                        "success_rate": cap.success_rate
-                    }
-                    for name, cap in self.capabilities.items()
-                }
-            }
-        elif message_type == "collaboration_request":
-            # 评估是否接受协作请求
-            task = message.get("task", {})
-            my_assessment = self._assess_capabilities(self._analyze_task_requirements(task))
-            avg_capability = sum(my_assessment.values()) / len(my_assessment) if my_assessment else 0.0
-            
-            accept = avg_capability > 0.4  # 如果有一定能力就接受
-            
-            return {
-                "type": "collaboration_response",
-                "accept": accept,
-                "capability_assessment": my_assessment
-            }
-        else:
-            return {
-                "type": "general_response",
-                "message": f"收到来自 {sender_id} 的消息"
-            }
-    
-    def get_agent_status(self) -> Dict[str, Any]:
-        """获取智能体状态"""
-        return {
-            "agent_id": self.agent_id,
-            "agent_type": self.agent_type,
-            "state": self.state.value,
-            "learning_mode": self.learning_mode.value,
-            "adaptation_strategy": self.adaptation_strategy.value,
-            "capabilities": {
-                name: {
-                    "proficiency": cap.proficiency_level,
-                    "success_rate": cap.success_rate,
-                    "usage_count": cap.usage_count
-                }
-                for name, cap in self.capabilities.items()
-            },
-            "performance_metrics": self.performance_metrics,
-            "self_assessment": self.self_assessment,
-            "collaborators": list(self.collaborators.keys()),
-            "knowledge_graph_size": self.knowledge_graph.number_of_nodes(),
-            "experience_count": len(self.experiences)
-        }
 
-class AgentZeroIntegration:
-    """Agent Zero与PowerAutomation集成"""
+class CodeGeneratorAgent(BaseAgent):
+    """代码生成智能体"""
     
-    def __init__(self):
-        """初始化Agent Zero集成"""
-        self.agents: Dict[str, OrganicAgent] = {}
-        self.agent_registry = {}
-        self.task_queue = asyncio.Queue()
-        self.integration_stats = {
-            "total_agents": 0,
-            "active_agents": 0,
-            "completed_tasks": 0,
-            "collaboration_events": 0,
-            "learning_events": 0,
-            "adaptation_events": 0
-        }
+    def __init__(self, agent_id: str, config: Dict[str, Any]):
+        super().__init__(agent_id, AgentType.CODE_GENERATOR, config)
         
-        # 创建默认智能体
-        asyncio.create_task(self._initialize_default_agents())
-        
-        logger.info("Agent Zero集成初始化完成")
-    
-    async def _initialize_default_agents(self):
-        """初始化默认智能体"""
-        # 创建专业智能体
-        agents_config = [
-            {
-                "agent_id": "code_analyst",
-                "agent_type": "code_analysis",
-                "capabilities": ["code_analysis", "pattern_recognition", "problem_solving"]
-            },
-            {
-                "agent_id": "code_generator",
-                "agent_type": "code_generation",
-                "capabilities": ["code_generation", "problem_solving", "decision_making"]
-            },
-            {
-                "agent_id": "debugger",
-                "agent_type": "debugging",
-                "capabilities": ["debugging", "problem_solving", "pattern_recognition"]
-            },
-            {
-                "agent_id": "optimizer",
-                "agent_type": "optimization",
-                "capabilities": ["optimization", "performance_analysis", "problem_solving"]
-            },
-            {
-                "agent_id": "collaborator",
-                "agent_type": "collaboration",
-                "capabilities": ["communication", "coordination", "decision_making"]
-            }
-        ]
-        
-        for config in agents_config:
-            agent = OrganicAgent(
-                agent_id=config["agent_id"],
-                agent_type=config["agent_type"],
-                initial_capabilities=config["capabilities"]
+        # 初始化代码生成能力
+        self.capabilities = {
+            "function_generation": AgentCapability(
+                "function_generation", "函数生成", "生成函数代码", 0.6, 0.7
+            ),
+            "class_generation": AgentCapability(
+                "class_generation", "类生成", "生成类代码", 0.5, 0.6
+            ),
+            "algorithm_implementation": AgentCapability(
+                "algorithm_implementation", "算法实现", "实现算法代码", 0.7, 0.8
+            ),
+            "api_integration": AgentCapability(
+                "api_integration", "API集成", "生成API集成代码", 0.4, 0.5
+            ),
+            "test_generation": AgentCapability(
+                "test_generation", "测试生成", "生成测试代码", 0.5, 0.6
             )
-            
-            await self.register_agent(agent)
-        
-        # 建立协作关系
-        await self._establish_collaborations()
-    
-    async def _establish_collaborations(self):
-        """建立智能体间的协作关系"""
-        agent_list = list(self.agents.values())
-        
-        # 每个智能体与其他智能体建立协作关系
-        for i, agent1 in enumerate(agent_list):
-            for j, agent2 in enumerate(agent_list):
-                if i != j:
-                    await agent1.add_collaborator(agent2)
-    
-    async def register_agent(self, agent: OrganicAgent):
-        """注册智能体"""
-        self.agents[agent.agent_id] = agent
-        self.agent_registry[agent.agent_id] = {
-            "agent_type": agent.agent_type,
-            "capabilities": list(agent.capabilities.keys()),
-            "registration_time": datetime.now()
         }
         
-        self.integration_stats["total_agents"] += 1
-        self.integration_stats["active_agents"] += 1
-        
-        logger.info(f"智能体 {agent.agent_id} 注册成功")
+        # 代码模板库
+        self.code_templates = {
+            "function": """def {function_name}({parameters}):
+    \"\"\"
+    {description}
+    \"\"\"
+    {body}
+    return {return_value}""",
+            
+            "class": """class {class_name}:
+    \"\"\"
+    {description}
+    \"\"\"
     
-    async def assign_task(self, task: Dict[str, Any], 
-                         preferred_agent: str = None) -> Dict[str, Any]:
-        """分配任务给智能体"""
-        # 选择最适合的智能体
-        if preferred_agent and preferred_agent in self.agents:
-            selected_agent = self.agents[preferred_agent]
-        else:
-            selected_agent = await self._select_best_agent(task)
+    def __init__(self{init_params}):
+        {init_body}
+    
+    {methods}""",
+            
+            "api_call": """async def {function_name}({parameters}):
+    \"\"\"
+    {description}
+    \"\"\"
+    try:
+        response = await {api_call}
+        return response
+    except Exception as e:
+        logger.error(f"API调用失败: {{e}}")
+        return None"""
+        }
+    
+    async def execute_task(self, task: Task) -> Dict[str, Any]:
+        """执行代码生成任务"""
+        self.state = AgentState.WORKING
         
-        if not selected_agent:
+        try:
+            generation_type = task.requirements.get("type", "function")
+            specification = task.requirements.get("specification", {})
+            
+            generated_code = ""
+            generation_score = 0.5
+            
+            if generation_type == "function":
+                result = await self._generate_function(specification)
+                generated_code = result["code"]
+                generation_score = result["score"]
+                await self.update_capability("function_generation", generation_score)
+            
+            elif generation_type == "class":
+                result = await self._generate_class(specification)
+                generated_code = result["code"]
+                generation_score = result["score"]
+                await self.update_capability("class_generation", generation_score)
+            
+            elif generation_type == "algorithm":
+                result = await self._implement_algorithm(specification)
+                generated_code = result["code"]
+                generation_score = result["score"]
+                await self.update_capability("algorithm_implementation", generation_score)
+            
+            elif generation_type == "api":
+                result = await self._generate_api_integration(specification)
+                generated_code = result["code"]
+                generation_score = result["score"]
+                await self.update_capability("api_integration", generation_score)
+            
+            elif generation_type == "test":
+                result = await self._generate_test_code(specification)
+                generated_code = result["code"]
+                generation_score = result["score"]
+                await self.update_capability("test_generation", generation_score)
+            
+            # 更新性能历史
+            self.performance_history.append(generation_score)
+            
+            # 更新成功率
+            if len(self.performance_history) == 1:
+                self.task_success_rate = generation_score
+            else:
+                self.task_success_rate = self.task_success_rate * 0.9 + generation_score * 0.1
+            
+            self.state = AgentState.IDLE
+            
+            return {
+                "success": True,
+                "generated_code": generated_code,
+                "generation_score": generation_score,
+                "generation_type": generation_type,
+                "agent_id": self.agent_id,
+                "task_id": task.task_id
+            }
+            
+        except Exception as e:
+            logger.error(f"代码生成任务失败: {e}")
+            self.state = AgentState.IDLE
             return {
                 "success": False,
-                "error": "没有找到合适的智能体执行任务"
+                "error": str(e),
+                "agent_id": self.agent_id,
+                "task_id": task.task_id
             }
+    
+    async def _generate_function(self, spec: Dict[str, Any]) -> Dict[str, Any]:
+        """生成函数代码"""
+        function_name = spec.get("name", "generated_function")
+        parameters = spec.get("parameters", [])
+        description = spec.get("description", "Generated function")
+        return_type = spec.get("return_type", "Any")
         
-        # 执行任务
-        result = await selected_agent.execute_task(task)
+        # 构建参数字符串
+        param_str = ", ".join(parameters) if parameters else ""
         
-        # 更新统计
-        self.integration_stats["completed_tasks"] += 1
-        if result.get("learning_occurred"):
-            self.integration_stats["learning_events"] += 1
+        # 生成函数体（简化实现）
+        if "calculate" in function_name.lower():
+            body = "    result = 0\n    # TODO: 实现计算逻辑"
+            return_value = "result"
+        elif "process" in function_name.lower():
+            body = "    processed_data = data\n    # TODO: 实现处理逻辑"
+            return_value = "processed_data"
+        else:
+            body = "    # TODO: 实现函数逻辑"
+            return_value = "None"
         
-        # 记录协作事件
-        if result.get("execution_method") == "collaborative":
-            self.integration_stats["collaboration_events"] += 1
+        code = self.code_templates["function"].format(
+            function_name=function_name,
+            parameters=param_str,
+            description=description,
+            body=body,
+            return_value=return_value
+        )
+        
+        # 评估生成质量
+        score = 0.7  # 基础分数
+        if parameters:
+            score += 0.1  # 有参数
+        if description and len(description) > 10:
+            score += 0.1  # 有详细描述
+        if return_type != "Any":
+            score += 0.1  # 指定了返回类型
         
         return {
-            "task_result": result,
-            "assigned_agent": selected_agent.agent_id,
-            "agent_status": selected_agent.get_agent_status()
+            "code": code,
+            "score": min(1.0, score)
         }
     
-    async def _select_best_agent(self, task: Dict[str, Any]) -> Optional[OrganicAgent]:
-        """选择最适合的智能体"""
-        task_type = task.get("type", "general")
-        required_capabilities = self._analyze_task_requirements(task)
+    async def _generate_class(self, spec: Dict[str, Any]) -> Dict[str, Any]:
+        """生成类代码"""
+        class_name = spec.get("name", "GeneratedClass")
+        description = spec.get("description", "Generated class")
+        attributes = spec.get("attributes", [])
+        methods = spec.get("methods", [])
         
-        best_agent = None
+        # 生成初始化方法
+        if attributes:
+            init_params = ", " + ", ".join(attributes)
+            init_body = "\n        ".join([f"self.{attr} = {attr}" for attr in attributes])
+        else:
+            init_params = ""
+            init_body = "pass"
+        
+        # 生成方法
+        method_code = ""
+        for method in methods:
+            method_name = method.get("name", "method")
+            method_params = method.get("parameters", [])
+            method_desc = method.get("description", "Generated method")
+            
+            param_str = ", ".join(method_params) if method_params else ""
+            method_code += f"""
+    def {method_name}(self{', ' + param_str if param_str else ''}):
+        \"\"\"
+        {method_desc}
+        \"\"\"
+        # TODO: 实现方法逻辑
+        pass
+"""
+        
+        code = self.code_templates["class"].format(
+            class_name=class_name,
+            description=description,
+            init_params=init_params,
+            init_body=init_body,
+            methods=method_code
+        )
+        
+        # 评估生成质量
+        score = 0.6  # 基础分数
+        if attributes:
+            score += 0.1  # 有属性
+        if methods:
+            score += 0.2  # 有方法
+        if len(description) > 10:
+            score += 0.1  # 有详细描述
+        
+        return {
+            "code": code,
+            "score": min(1.0, score)
+        }
+    
+    async def _implement_algorithm(self, spec: Dict[str, Any]) -> Dict[str, Any]:
+        """实现算法代码"""
+        algorithm_name = spec.get("name", "algorithm")
+        algorithm_type = spec.get("type", "general")
+        
+        # 根据算法类型生成代码
+        if algorithm_type == "sort":
+            code = self._generate_sort_algorithm(algorithm_name)
+            score = 0.8
+        elif algorithm_type == "search":
+            code = self._generate_search_algorithm(algorithm_name)
+            score = 0.8
+        elif algorithm_type == "graph":
+            code = self._generate_graph_algorithm(algorithm_name)
+            score = 0.7
+        else:
+            code = f"""def {algorithm_name}(data):
+    \"\"\"
+    {algorithm_type} algorithm implementation
+    \"\"\"
+    # TODO: 实现{algorithm_type}算法
+    return data"""
+            score = 0.5
+        
+        return {
+            "code": code,
+            "score": score
+        }
+    
+    def _generate_sort_algorithm(self, name: str) -> str:
+        """生成排序算法"""
+        if "quick" in name.lower():
+            return """def quick_sort(arr):
+    \"\"\"
+    快速排序算法实现
+    \"\"\"
+    if len(arr) <= 1:
+        return arr
+    
+    pivot = arr[len(arr) // 2]
+    left = [x for x in arr if x < pivot]
+    middle = [x for x in arr if x == pivot]
+    right = [x for x in arr if x > pivot]
+    
+    return quick_sort(left) + middle + quick_sort(right)"""
+        
+        elif "merge" in name.lower():
+            return """def merge_sort(arr):
+    \"\"\"
+    归并排序算法实现
+    \"\"\"
+    if len(arr) <= 1:
+        return arr
+    
+    mid = len(arr) // 2
+    left = merge_sort(arr[:mid])
+    right = merge_sort(arr[mid:])
+    
+    return merge(left, right)
+
+def merge(left, right):
+    result = []
+    i = j = 0
+    
+    while i < len(left) and j < len(right):
+        if left[i] <= right[j]:
+            result.append(left[i])
+            i += 1
+        else:
+            result.append(right[j])
+            j += 1
+    
+    result.extend(left[i:])
+    result.extend(right[j:])
+    return result"""
+        
+        else:
+            return """def bubble_sort(arr):
+    \"\"\"
+    冒泡排序算法实现
+    \"\"\"
+    n = len(arr)
+    for i in range(n):
+        for j in range(0, n - i - 1):
+            if arr[j] > arr[j + 1]:
+                arr[j], arr[j + 1] = arr[j + 1], arr[j]
+    return arr"""
+    
+    def _generate_search_algorithm(self, name: str) -> str:
+        """生成搜索算法"""
+        if "binary" in name.lower():
+            return """def binary_search(arr, target):
+    \"\"\"
+    二分搜索算法实现
+    \"\"\"
+    left, right = 0, len(arr) - 1
+    
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    
+    return -1"""
+        
+        else:
+            return """def linear_search(arr, target):
+    \"\"\"
+    线性搜索算法实现
+    \"\"\"
+    for i, value in enumerate(arr):
+        if value == target:
+            return i
+    return -1"""
+    
+    def _generate_graph_algorithm(self, name: str) -> str:
+        """生成图算法"""
+        return """def dfs(graph, start, visited=None):
+    \"\"\"
+    深度优先搜索算法实现
+    \"\"\"
+    if visited is None:
+        visited = set()
+    
+    visited.add(start)
+    result = [start]
+    
+    for neighbor in graph.get(start, []):
+        if neighbor not in visited:
+            result.extend(dfs(graph, neighbor, visited))
+    
+    return result"""
+    
+    async def _generate_api_integration(self, spec: Dict[str, Any]) -> Dict[str, Any]:
+        """生成API集成代码"""
+        api_name = spec.get("name", "api_call")
+        api_url = spec.get("url", "https://api.example.com")
+        method = spec.get("method", "GET")
+        
+        code = f"""import aiohttp
+import logging
+
+logger = logging.getLogger(__name__)
+
+async def {api_name}(session, **kwargs):
+    \"\"\"
+    {api_name} API调用
+    \"\"\"
+    url = "{api_url}"
+    
+    try:
+        async with session.{method.lower()}(url, **kwargs) as response:
+            if response.status == 200:
+                return await response.json()
+            else:
+                logger.error(f"API调用失败: {{response.status}}")
+                return None
+    except Exception as e:
+        logger.error(f"API调用异常: {{e}}")
+        return None"""
+        
+        return {
+            "code": code,
+            "score": 0.7
+        }
+    
+    async def _generate_test_code(self, spec: Dict[str, Any]) -> Dict[str, Any]:
+        """生成测试代码"""
+        function_name = spec.get("function_name", "test_function")
+        test_cases = spec.get("test_cases", [])
+        
+        code = f"""import unittest
+
+class Test{function_name.title()}(unittest.TestCase):
+    \"\"\"
+    {function_name} 测试类
+    \"\"\"
+    
+    def setUp(self):
+        \"\"\"测试前置设置\"\"\"
+        pass
+    
+    def tearDown(self):
+        \"\"\"测试后置清理\"\"\"
+        pass
+"""
+        
+        # 生成测试方法
+        for i, test_case in enumerate(test_cases):
+            test_name = test_case.get("name", f"test_case_{i+1}")
+            expected = test_case.get("expected", "None")
+            
+            code += f"""
+    def test_{test_name}(self):
+        \"\"\"测试 {test_name}\"\"\"
+        # TODO: 实现测试逻辑
+        result = {function_name}()
+        self.assertEqual(result, {expected})
+"""
+        
+        code += """
+if __name__ == '__main__':
+    unittest.main()"""
+        
+        return {
+            "code": code,
+            "score": 0.6 + 0.1 * len(test_cases)
+        }
+    
+    async def learn_from_experience(self, experience: Dict[str, Any]) -> bool:
+        """从经验中学习"""
+        self.state = AgentState.LEARNING
+        
+        try:
+            # 添加到经验缓冲区
+            self.experience_buffer.append(experience)
+            
+            # 学习代码生成模式
+            generation_type = experience.get("generation_type", "unknown")
+            performance = experience.get("performance", 0.5)
+            generated_code = experience.get("generated_code", "")
+            
+            # 更新代码模板
+            if performance > 0.8 and generated_code:
+                if generation_type not in self.knowledge_base:
+                    self.knowledge_base[generation_type] = {"successful_patterns": []}
+                
+                self.knowledge_base[generation_type]["successful_patterns"].append({
+                    "code": generated_code,
+                    "performance": performance,
+                    "timestamp": datetime.now().isoformat()
+                })
+            
+            self.state = AgentState.IDLE
+            return True
+            
+        except Exception as e:
+            logger.error(f"学习失败: {e}")
+            self.state = AgentState.IDLE
+            return False
+
+class AgentZeroIntegration:
+    """Agent Zero有机智能体集成系统"""
+    
+    def __init__(self, config_path: str = "./agent_zero_config.json"):
+        """初始化Agent Zero集成"""
+        self.config_path = Path(config_path)
+        self.config = self._load_config()
+        
+        # 智能体池
+        self.agents: Dict[str, BaseAgent] = {}
+        self.agent_types: Dict[AgentType, List[str]] = defaultdict(list)
+        
+        # 任务管理
+        self.task_queue: deque = deque()
+        self.active_tasks: Dict[str, Task] = {}
+        self.completed_tasks: List[Task] = []
+        
+        # 协作网络
+        self.collaboration_network: Dict[str, Set[str]] = defaultdict(set)
+        self.collaboration_history: List[CollaborationRecord] = []
+        
+        # 知识图谱
+        self.knowledge_graph: Dict[str, KnowledgeNode] = {}
+        self.knowledge_connections: Dict[str, Set[str]] = defaultdict(set)
+        
+        # 学习系统
+        self.learning_events: List[LearningEvent] = []
+        self.collective_knowledge: Dict[str, Any] = {}
+        
+        # 性能监控
+        self.system_metrics: Dict[str, float] = {}
+        self.agent_performance: Dict[str, Dict[str, float]] = {}
+        
+        # 存储
+        self.data_dir = Path(self.config.get("data_dir", "./agent_zero_data"))
+        self.data_dir.mkdir(parents=True, exist_ok=True)
+        self.db_path = self.data_dir / "agent_zero.db"
+        
+        # 初始化数据库
+        self._init_database()
+        
+        # 创建初始智能体
+        self._create_initial_agents()
+        
+        # 后台任务
+        self.task_processor = None
+        self.learning_processor = None
+        self.evolution_processor = None
+        
+        logger.info("Agent Zero有机智能体集成系统初始化完成")
+    
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置"""
+        default_config = {
+            "initial_agents": {
+                "code_analyzer": 1,
+                "code_generator": 1,
+                "debugger": 1,
+                "optimizer": 1,
+                "collaborator": 1
+            },
+            "max_agents_per_type": 3,
+            "task_timeout": 300,
+            "collaboration_threshold": 0.7,
+            "evolution_interval": 3600,
+            "learning_interval": 1800,
+            "data_dir": "./agent_zero_data",
+            "enable_evolution": True,
+            "enable_collaboration": True,
+            "enable_learning": True,
+            "mutation_rate": 0.05,
+            "evolution_threshold": 0.8,
+            "learning_rate": 0.1
+        }
+        
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    user_config = json.load(f)
+                default_config.update(user_config)
+            except Exception as e:
+                logger.warning(f"加载配置文件失败，使用默认配置: {e}")
+        
+        return default_config
+    
+    def _init_database(self):
+        """初始化数据库"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # 创建智能体表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS agents (
+                        agent_id TEXT PRIMARY KEY,
+                        agent_type TEXT NOT NULL,
+                        capabilities TEXT,
+                        performance_history TEXT,
+                        knowledge_base TEXT,
+                        collaboration_partners TEXT,
+                        generation INTEGER DEFAULT 0,
+                        created_at TIMESTAMP NOT NULL,
+                        last_updated TIMESTAMP
+                    )
+                ''')
+                
+                # 创建任务表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS tasks (
+                        task_id TEXT PRIMARY KEY,
+                        task_type TEXT NOT NULL,
+                        description TEXT,
+                        complexity TEXT,
+                        requirements TEXT,
+                        assigned_agents TEXT,
+                        status TEXT,
+                        result TEXT,
+                        created_at TIMESTAMP NOT NULL,
+                        completed_at TIMESTAMP
+                    )
+                ''')
+                
+                # 创建学习事件表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS learning_events (
+                        event_id TEXT PRIMARY KEY,
+                        agent_id TEXT NOT NULL,
+                        event_type TEXT NOT NULL,
+                        task_id TEXT,
+                        outcome TEXT,
+                        performance_score REAL,
+                        learning_data TEXT,
+                        timestamp TIMESTAMP NOT NULL
+                    )
+                ''')
+                
+                # 创建协作记录表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS collaboration_records (
+                        collaboration_id TEXT PRIMARY KEY,
+                        participating_agents TEXT NOT NULL,
+                        task_id TEXT NOT NULL,
+                        collaboration_type TEXT,
+                        outcome TEXT,
+                        efficiency_score REAL,
+                        knowledge_shared TEXT,
+                        timestamp TIMESTAMP NOT NULL
+                    )
+                ''')
+                
+                # 创建知识图谱表
+                cursor.execute('''
+                    CREATE TABLE IF NOT EXISTS knowledge_nodes (
+                        node_id TEXT PRIMARY KEY,
+                        content TEXT NOT NULL,
+                        node_type TEXT,
+                        confidence REAL,
+                        source_agent TEXT,
+                        connections TEXT,
+                        access_count INTEGER DEFAULT 0,
+                        created_at TIMESTAMP NOT NULL,
+                        last_accessed TIMESTAMP
+                    )
+                ''')
+                
+                # 创建索引
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_agent_type ON agents(agent_type)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_task_status ON tasks(status)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_learning_agent ON learning_events(agent_id)')
+                cursor.execute('CREATE INDEX IF NOT EXISTS idx_collaboration_task ON collaboration_records(task_id)')
+                
+                conn.commit()
+                logger.info("Agent Zero数据库初始化完成")
+                
+        except Exception as e:
+            logger.error(f"数据库初始化失败: {e}")
+            raise
+    
+    def _create_initial_agents(self):
+        """创建初始智能体"""
+        initial_agents = self.config.get("initial_agents", {})
+        
+        for agent_type_str, count in initial_agents.items():
+            agent_type = AgentType(agent_type_str)
+            
+            for i in range(count):
+                agent_id = f"{agent_type_str}_{i+1}_{uuid.uuid4().hex[:8]}"
+                
+                if agent_type == AgentType.CODE_ANALYZER:
+                    agent = CodeAnalyzerAgent(agent_id, self.config)
+                elif agent_type == AgentType.CODE_GENERATOR:
+                    agent = CodeGeneratorAgent(agent_id, self.config)
+                # TODO: 实现其他智能体类型
+                else:
+                    continue
+                
+                self.agents[agent_id] = agent
+                self.agent_types[agent_type].append(agent_id)
+                
+                logger.info(f"创建智能体: {agent_id} ({agent_type.value})")
+    
+    async def start_background_tasks(self):
+        """启动后台任务"""
+        self.task_processor = asyncio.create_task(self._task_processing_loop())
+        
+        if self.config.get("enable_learning", True):
+            self.learning_processor = asyncio.create_task(self._learning_processing_loop())
+        
+        if self.config.get("enable_evolution", True):
+            self.evolution_processor = asyncio.create_task(self._evolution_processing_loop())
+        
+        logger.info("Agent Zero后台任务启动完成")
+    
+    async def submit_task(self, task_type: str, description: str, 
+                         requirements: Dict[str, Any],
+                         complexity: TaskComplexity = TaskComplexity.MEDIUM,
+                         priority: int = 1) -> str:
+        """提交任务"""
+        task_id = f"task_{uuid.uuid4().hex[:12]}"
+        
+        task = Task(
+            task_id=task_id,
+            task_type=task_type,
+            description=description,
+            complexity=complexity,
+            requirements=requirements,
+            priority=priority
+        )
+        
+        # 添加到任务队列
+        self.task_queue.append(task)
+        self.active_tasks[task_id] = task
+        
+        logger.info(f"提交任务: {task_id} ({task_type})")
+        return task_id
+    
+    async def assign_task_to_agent(self, task: Task) -> Optional[str]:
+        """将任务分配给智能体"""
+        # 根据任务类型选择合适的智能体类型
+        suitable_agent_types = self._get_suitable_agent_types(task.task_type)
+        
+        best_agent_id = None
         best_score = 0.0
         
-        for agent in self.agents.values():
-            if agent.state == AgentState.ERROR:
-                continue
+        for agent_type in suitable_agent_types:
+            agent_ids = self.agent_types.get(agent_type, [])
             
-            # 计算匹配分数
-            score = 0.0
-            capability_count = 0
-            
-            for cap_name in required_capabilities:
-                if cap_name in agent.capabilities:
-                    capability = agent.capabilities[cap_name]
-                    score += capability.proficiency_level * capability.success_rate
-                    capability_count += 1
-            
-            # 平均分数
-            if capability_count > 0:
-                avg_score = score / capability_count
+            for agent_id in agent_ids:
+                agent = self.agents[agent_id]
                 
-                # 考虑智能体类型匹配
-                if agent.agent_type == task_type:
-                    avg_score *= 1.2  # 类型匹配加成
+                # 检查智能体状态
+                if agent.state != AgentState.IDLE:
+                    continue
                 
-                # 考虑当前状态
-                if agent.state == AgentState.ACTIVE:
-                    avg_score *= 1.1
-                elif agent.state == AgentState.LEARNING:
-                    avg_score *= 0.9
+                # 计算适合度分数
+                score = await self._calculate_agent_suitability(agent, task)
                 
-                if avg_score > best_score:
-                    best_score = avg_score
-                    best_agent = agent
+                if score > best_score:
+                    best_score = score
+                    best_agent_id = agent_id
         
-        return best_agent
+        if best_agent_id:
+            task.assigned_agents = [best_agent_id]
+            logger.debug(f"任务 {task.task_id} 分配给智能体 {best_agent_id} (分数: {best_score:.3f})")
+        
+        return best_agent_id
     
-    def _analyze_task_requirements(self, task: Dict[str, Any]) -> List[str]:
-        """分析任务需求（复用OrganicAgent的方法）"""
-        task_type = task.get("type", "general")
+    def _get_suitable_agent_types(self, task_type: str) -> List[AgentType]:
+        """获取适合的智能体类型"""
+        type_mapping = {
+            "code_analysis": [AgentType.CODE_ANALYZER],
+            "code_generation": [AgentType.CODE_GENERATOR],
+            "debugging": [AgentType.DEBUGGER],
+            "optimization": [AgentType.OPTIMIZER],
+            "collaboration": [AgentType.COLLABORATOR],
+            "comprehensive": [AgentType.CODE_ANALYZER, AgentType.CODE_GENERATOR, AgentType.OPTIMIZER]
+        }
         
+        return type_mapping.get(task_type, [AgentType.CODE_ANALYZER])
+    
+    async def _calculate_agent_suitability(self, agent: BaseAgent, task: Task) -> float:
+        """计算智能体适合度"""
+        base_score = 0.5
+        
+        # 基于任务成功率
+        success_rate_score = agent.task_success_rate * 0.4
+        
+        # 基于相关能力
+        relevant_capabilities = self._get_relevant_capabilities(task.task_type)
+        capability_score = 0.0
+        
+        for cap_id in relevant_capabilities:
+            if cap_id in agent.capabilities:
+                capability = agent.capabilities[cap_id]
+                capability_score += capability.proficiency * capability.confidence
+        
+        if relevant_capabilities:
+            capability_score /= len(relevant_capabilities)
+        
+        capability_score *= 0.3
+        
+        # 基于协作能力
+        collaboration_score = agent.collaboration_score * 0.2
+        
+        # 基于学习能力
+        adaptation_score = agent.adaptation_score * 0.1
+        
+        total_score = base_score + success_rate_score + capability_score + collaboration_score + adaptation_score
+        
+        return min(1.0, total_score)
+    
+    def _get_relevant_capabilities(self, task_type: str) -> List[str]:
+        """获取相关能力"""
         capability_mapping = {
-            "code_analysis": ["code_analysis", "pattern_recognition"],
-            "code_generation": ["code_generation", "problem_solving"],
-            "debugging": ["debugging", "problem_solving"],
-            "optimization": ["optimization", "performance_analysis"],
-            "collaboration": ["communication", "coordination"],
-            "general": ["problem_solving", "decision_making"]
+            "code_analysis": ["syntax_analysis", "complexity_analysis", "pattern_recognition"],
+            "code_generation": ["function_generation", "class_generation", "algorithm_implementation"],
+            "debugging": ["error_detection", "bug_fixing", "testing"],
+            "optimization": ["performance_optimization", "code_refactoring", "efficiency_improvement"]
         }
         
-        return capability_mapping.get(task_type, ["problem_solving"])
+        return capability_mapping.get(task_type, [])
     
-    async def trigger_collective_learning(self, learning_data: Dict[str, Any]):
+    async def execute_task(self, task_id: str) -> Dict[str, Any]:
+        """执行任务"""
+        if task_id not in self.active_tasks:
+            return {"success": False, "error": "任务不存在"}
+        
+        task = self.active_tasks[task_id]
+        
+        # 分配智能体
+        if not task.assigned_agents:
+            agent_id = await self.assign_task_to_agent(task)
+            if not agent_id:
+                return {"success": False, "error": "无可用智能体"}
+        
+        agent_id = task.assigned_agents[0]
+        agent = self.agents[agent_id]
+        
+        # 检查是否需要协作
+        if task.complexity in [TaskComplexity.COMPLEX, TaskComplexity.EXPERT]:
+            collaboration_result = await self._handle_collaborative_task(task)
+            if collaboration_result:
+                return collaboration_result
+        
+        # 执行任务
+        try:
+            result = await agent.execute_task(task)
+            
+            # 记录学习事件
+            await self._record_learning_event(
+                agent_id=agent_id,
+                event_type="task_execution",
+                task_id=task_id,
+                outcome="success" if result.get("success", False) else "failure",
+                performance_score=result.get("overall_score", result.get("generation_score", 0.5)),
+                learning_data=result
+            )
+            
+            # 更新任务状态
+            task.status = "completed" if result.get("success", False) else "failed"
+            self.completed_tasks.append(task)
+            
+            if task_id in self.active_tasks:
+                del self.active_tasks[task_id]
+            
+            return result
+            
+        except Exception as e:
+            logger.error(f"任务执行失败: {e}")
+            task.status = "failed"
+            return {"success": False, "error": str(e)}
+    
+    async def _handle_collaborative_task(self, task: Task) -> Optional[Dict[str, Any]]:
+        """处理协作任务"""
+        if not self.config.get("enable_collaboration", True):
+            return None
+        
+        # 选择协作智能体
+        primary_agent_id = task.assigned_agents[0]
+        primary_agent = self.agents[primary_agent_id]
+        
+        # 寻找协作伙伴
+        collaboration_partners = await self._find_collaboration_partners(primary_agent, task)
+        
+        if not collaboration_partners:
+            return None
+        
+        # 执行协作
+        collaboration_id = f"collab_{uuid.uuid4().hex[:12]}"
+        participating_agents = [primary_agent_id] + collaboration_partners
+        
+        try:
+            # 协作执行逻辑
+            results = []
+            
+            for agent_id in participating_agents:
+                agent = self.agents[agent_id]
+                agent_result = await agent.execute_task(task)
+                results.append(agent_result)
+            
+            # 整合结果
+            integrated_result = await self._integrate_collaboration_results(results)
+            
+            # 记录协作
+            collaboration_record = CollaborationRecord(
+                collaboration_id=collaboration_id,
+                participating_agents=participating_agents,
+                task_id=task.task_id,
+                collaboration_type="task_execution",
+                outcome="success" if integrated_result.get("success", False) else "failure",
+                efficiency_score=integrated_result.get("efficiency_score", 0.5),
+                knowledge_shared=integrated_result.get("knowledge_shared", {})
+            )
+            
+            self.collaboration_history.append(collaboration_record)
+            
+            # 更新协作网络
+            for i, agent_id1 in enumerate(participating_agents):
+                for j, agent_id2 in enumerate(participating_agents):
+                    if i != j:
+                        self.collaboration_network[agent_id1].add(agent_id2)
+            
+            return integrated_result
+            
+        except Exception as e:
+            logger.error(f"协作任务执行失败: {e}")
+            return None
+    
+    async def _find_collaboration_partners(self, primary_agent: BaseAgent, 
+                                         task: Task) -> List[str]:
+        """寻找协作伙伴"""
+        partners = []
+        collaboration_threshold = self.config.get("collaboration_threshold", 0.7)
+        
+        # 基于信任分数选择伙伴
+        for partner_id, trust_score in primary_agent.trust_scores.items():
+            if trust_score >= collaboration_threshold and partner_id in self.agents:
+                partner_agent = self.agents[partner_id]
+                if partner_agent.state == AgentState.IDLE:
+                    partners.append(partner_id)
+        
+        # 如果没有足够的信任伙伴，基于能力选择
+        if len(partners) < 2:
+            suitable_types = self._get_suitable_agent_types(task.task_type)
+            
+            for agent_type in suitable_types:
+                agent_ids = self.agent_types.get(agent_type, [])
+                
+                for agent_id in agent_ids:
+                    if agent_id != primary_agent.agent_id and agent_id not in partners:
+                        agent = self.agents[agent_id]
+                        if agent.state == AgentState.IDLE and agent.task_success_rate > 0.6:
+                            partners.append(agent_id)
+                            if len(partners) >= 2:
+                                break
+                
+                if len(partners) >= 2:
+                    break
+        
+        return partners[:2]  # 最多2个协作伙伴
+    
+    async def _integrate_collaboration_results(self, results: List[Dict[str, Any]]) -> Dict[str, Any]:
+        """整合协作结果"""
+        successful_results = [r for r in results if r.get("success", False)]
+        
+        if not successful_results:
+            return {"success": False, "error": "所有协作智能体都失败了"}
+        
+        # 选择最佳结果
+        best_result = max(successful_results, 
+                         key=lambda r: r.get("overall_score", r.get("generation_score", 0.0)))
+        
+        # 计算协作效率
+        success_rate = len(successful_results) / len(results)
+        efficiency_score = success_rate * 0.7 + best_result.get("overall_score", 0.5) * 0.3
+        
+        # 整合知识
+        knowledge_shared = {}
+        for result in successful_results:
+            if "knowledge_gained" in result:
+                knowledge_shared.update(result["knowledge_gained"])
+        
+        integrated_result = best_result.copy()
+        integrated_result.update({
+            "collaboration": True,
+            "participating_agents": len(results),
+            "success_rate": success_rate,
+            "efficiency_score": efficiency_score,
+            "knowledge_shared": knowledge_shared
+        })
+        
+        return integrated_result
+    
+    async def _record_learning_event(self, agent_id: str, event_type: str,
+                                   task_id: str, outcome: str,
+                                   performance_score: float,
+                                   learning_data: Dict[str, Any]):
+        """记录学习事件"""
+        event_id = f"learn_{uuid.uuid4().hex[:12]}"
+        
+        learning_event = LearningEvent(
+            event_id=event_id,
+            agent_id=agent_id,
+            event_type=event_type,
+            task_id=task_id,
+            outcome=outcome,
+            performance_score=performance_score,
+            learning_data=learning_data
+        )
+        
+        self.learning_events.append(learning_event)
+        
+        # 触发智能体学习
+        if agent_id in self.agents:
+            agent = self.agents[agent_id]
+            await agent.learn_from_experience({
+                "task_type": learning_data.get("task_type", "unknown"),
+                "performance": performance_score,
+                "outcome": outcome,
+                "capabilities_used": learning_data.get("capabilities_used", [])
+            })
+        
+        logger.debug(f"记录学习事件: {event_id} (智能体: {agent_id})")
+    
+    async def trigger_collective_learning(self, topic: str, 
+                                        examples: List[Dict[str, Any]]) -> Dict[str, Any]:
         """触发集体学习"""
-        learning_task = {
-            "type": "learning",
-            "data": learning_data,
-            "complexity": "medium"
-        }
-        
-        # 所有智能体参与学习
-        learning_results = []
-        for agent in self.agents.values():
-            if agent.state != AgentState.ERROR:
-                result = await agent.execute_task(learning_task)
-                learning_results.append({
-                    "agent_id": agent.agent_id,
-                    "learning_result": result
-                })
-        
-        self.integration_stats["learning_events"] += len(learning_results)
-        
-        return {
-            "collective_learning_completed": True,
-            "participating_agents": len(learning_results),
-            "results": learning_results
-        }
+        try:
+            learning_results = {}
+            
+            # 为所有智能体触发学习
+            for agent_id, agent in self.agents.items():
+                agent.state = AgentState.LEARNING
+                
+                # 构建学习经验
+                learning_experience = {
+                    "topic": topic,
+                    "examples": examples,
+                    "collective_learning": True,
+                    "timestamp": datetime.now().isoformat()
+                }
+                
+                # 触发学习
+                success = await agent.learn_from_experience(learning_experience)
+                learning_results[agent_id] = success
+                
+                agent.state = AgentState.IDLE
+            
+            # 更新集体知识
+            if topic not in self.collective_knowledge:
+                self.collective_knowledge[topic] = {
+                    "examples": [],
+                    "learning_count": 0,
+                    "success_rate": 0.0
+                }
+            
+            self.collective_knowledge[topic]["examples"].extend(examples)
+            self.collective_knowledge[topic]["learning_count"] += 1
+            
+            success_count = sum(1 for success in learning_results.values() if success)
+            success_rate = success_count / len(learning_results) if learning_results else 0.0
+            
+            self.collective_knowledge[topic]["success_rate"] = (
+                self.collective_knowledge[topic]["success_rate"] * 0.8 + success_rate * 0.2
+            )
+            
+            logger.info(f"集体学习完成: {topic} (成功率: {success_rate:.1%})")
+            
+            return {
+                "success": True,
+                "topic": topic,
+                "agents_learned": len(learning_results),
+                "success_rate": success_rate,
+                "learning_results": learning_results
+            }
+            
+        except Exception as e:
+            logger.error(f"集体学习失败: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
-    async def get_ecosystem_status(self) -> Dict[str, Any]:
-        """获取生态系统状态"""
-        agent_statuses = {}
+    async def _task_processing_loop(self):
+        """任务处理循环"""
+        while True:
+            try:
+                if self.task_queue:
+                    task = self.task_queue.popleft()
+                    await self.execute_task(task.task_id)
+                else:
+                    await asyncio.sleep(1)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"任务处理失败: {e}")
+                await asyncio.sleep(5)
+    
+    async def _learning_processing_loop(self):
+        """学习处理循环"""
+        learning_interval = self.config.get("learning_interval", 1800)
+        
+        while True:
+            try:
+                await self._process_collective_learning()
+                await asyncio.sleep(learning_interval)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"学习处理失败: {e}")
+                await asyncio.sleep(learning_interval)
+    
+    async def _evolution_processing_loop(self):
+        """进化处理循环"""
+        evolution_interval = self.config.get("evolution_interval", 3600)
+        
+        while True:
+            try:
+                await self._process_agent_evolution()
+                await asyncio.sleep(evolution_interval)
+            except asyncio.CancelledError:
+                break
+            except Exception as e:
+                logger.error(f"进化处理失败: {e}")
+                await asyncio.sleep(evolution_interval)
+    
+    async def _process_collective_learning(self):
+        """处理集体学习"""
+        # 分析最近的学习事件
+        recent_events = [
+            event for event in self.learning_events
+            if (datetime.now() - event.timestamp).total_seconds() < 3600
+        ]
+        
+        if not recent_events:
+            return
+        
+        # 按事件类型分组
+        event_groups = defaultdict(list)
+        for event in recent_events:
+            event_groups[event.event_type].append(event)
+        
+        # 为每个事件类型触发集体学习
+        for event_type, events in event_groups.items():
+            if len(events) >= 3:  # 至少3个事件才触发集体学习
+                examples = [
+                    {
+                        "performance": event.performance_score,
+                        "outcome": event.outcome,
+                        "data": event.learning_data
+                    }
+                    for event in events
+                ]
+                
+                await self.trigger_collective_learning(event_type, examples)
+    
+    async def _process_agent_evolution(self):
+        """处理智能体进化"""
+        evolution_candidates = []
+        
+        # 找到符合进化条件的智能体
         for agent_id, agent in self.agents.items():
-            agent_statuses[agent_id] = agent.get_agent_status()
+            if agent.task_success_rate >= agent.evolution_threshold:
+                evolution_candidates.append(agent_id)
         
-        # 计算生态系统指标
-        total_capabilities = sum(len(agent.capabilities) for agent in self.agents.values())
-        total_experiences = sum(len(agent.experiences) for agent in self.agents.values())
-        total_knowledge_nodes = sum(agent.knowledge_graph.number_of_nodes() for agent in self.agents.values())
+        # 执行进化
+        evolved_count = 0
+        for agent_id in evolution_candidates:
+            agent = self.agents[agent_id]
+            if await agent.evolve():
+                evolved_count += 1
         
-        avg_competence = sum(agent.self_assessment["overall_competence"] for agent in self.agents.values()) / len(self.agents) if self.agents else 0.0
+        if evolved_count > 0:
+            logger.info(f"智能体进化完成: {evolved_count} 个智能体进化")
+    
+    async def get_system_status(self) -> Dict[str, Any]:
+        """获取系统状态"""
+        # 计算系统指标
+        total_agents = len(self.agents)
+        active_tasks = len(self.active_tasks)
+        completed_tasks = len(self.completed_tasks)
+        
+        # 计算平均性能
+        agent_performances = []
+        for agent in self.agents.values():
+            agent_performances.append(agent.task_success_rate)
+        
+        avg_performance = np.mean(agent_performances) if agent_performances else 0.0
+        
+        # 协作统计
+        collaboration_count = len(self.collaboration_history)
+        avg_collaboration_efficiency = 0.0
+        
+        if self.collaboration_history:
+            efficiencies = [record.efficiency_score for record in self.collaboration_history]
+            avg_collaboration_efficiency = np.mean(efficiencies)
+        
+        # 学习统计
+        learning_events_count = len(self.learning_events)
+        collective_knowledge_topics = len(self.collective_knowledge)
         
         return {
-            "ecosystem_overview": {
-                "total_agents": len(self.agents),
-                "active_agents": len([a for a in self.agents.values() if a.state == AgentState.ACTIVE]),
-                "total_capabilities": total_capabilities,
-                "total_experiences": total_experiences,
-                "total_knowledge_nodes": total_knowledge_nodes,
-                "average_competence": avg_competence
+            "system_metrics": {
+                "total_agents": total_agents,
+                "active_tasks": active_tasks,
+                "completed_tasks": completed_tasks,
+                "average_performance": avg_performance,
+                "collaboration_count": collaboration_count,
+                "avg_collaboration_efficiency": avg_collaboration_efficiency,
+                "learning_events_count": learning_events_count,
+                "collective_knowledge_topics": collective_knowledge_topics
             },
-            "integration_stats": self.integration_stats,
-            "agent_details": agent_statuses,
-            "collaboration_network": self._analyze_collaboration_network()
+            "agent_breakdown": {
+                agent_type.value: len(agent_ids) 
+                for agent_type, agent_ids in self.agent_types.items()
+            },
+            "performance_distribution": {
+                "excellent": sum(1 for p in agent_performances if p >= 0.9),
+                "good": sum(1 for p in agent_performances if 0.7 <= p < 0.9),
+                "average": sum(1 for p in agent_performances if 0.5 <= p < 0.7),
+                "poor": sum(1 for p in agent_performances if p < 0.5)
+            },
+            "collaboration_network_size": sum(len(partners) for partners in self.collaboration_network.values()),
+            "knowledge_graph_nodes": len(self.knowledge_graph)
         }
     
-    def _analyze_collaboration_network(self) -> Dict[str, Any]:
-        """分析协作网络"""
-        network_stats = {
-            "total_connections": 0,
-            "collaboration_density": 0.0,
-            "most_collaborative_agent": None,
-            "collaboration_patterns": {}
-        }
-        
-        if not self.agents:
-            return network_stats
-        
-        # 计算连接数
-        total_connections = sum(len(agent.collaborators) for agent in self.agents.values())
-        network_stats["total_connections"] = total_connections
-        
-        # 计算协作密度
-        max_possible_connections = len(self.agents) * (len(self.agents) - 1)
-        if max_possible_connections > 0:
-            network_stats["collaboration_density"] = total_connections / max_possible_connections
-        
-        # 找出最具协作性的智能体
-        max_collaborations = 0
-        most_collaborative = None
-        
-        for agent in self.agents.values():
-            collaboration_count = agent.performance_metrics["collaboration_sessions"]
-            if collaboration_count > max_collaborations:
-                max_collaborations = collaboration_count
-                most_collaborative = agent.agent_id
-        
-        network_stats["most_collaborative_agent"] = most_collaborative
-        
-        return network_stats
+    async def cleanup(self):
+        """清理资源"""
+        try:
+            # 取消后台任务
+            if self.task_processor:
+                self.task_processor.cancel()
+                try:
+                    await self.task_processor
+                except asyncio.CancelledError:
+                    pass
+            
+            if self.learning_processor:
+                self.learning_processor.cancel()
+                try:
+                    await self.learning_processor
+                except asyncio.CancelledError:
+                    pass
+            
+            if self.evolution_processor:
+                self.evolution_processor.cancel()
+                try:
+                    await self.evolution_processor
+                except asyncio.CancelledError:
+                    pass
+            
+            # 保存数据
+            await self._persist_all_data()
+            
+            logger.info("Agent Zero集成系统清理完成")
+            
+        except Exception as e:
+            logger.error(f"清理资源失败: {e}")
+    
+    async def _persist_all_data(self):
+        """持久化所有数据"""
+        try:
+            with sqlite3.connect(self.db_path) as conn:
+                cursor = conn.cursor()
+                
+                # 保存智能体数据
+                for agent_id, agent in self.agents.items():
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO agents 
+                        (agent_id, agent_type, capabilities, performance_history, 
+                         knowledge_base, collaboration_partners, generation, 
+                         created_at, last_updated)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        agent_id,
+                        agent.agent_type.value,
+                        json.dumps({cap_id: asdict(cap) for cap_id, cap in agent.capabilities.items()}),
+                        json.dumps(agent.performance_history),
+                        json.dumps(agent.knowledge_base),
+                        json.dumps(list(agent.collaboration_partners)),
+                        agent.generation,
+                        datetime.now().isoformat(),
+                        datetime.now().isoformat()
+                    ))
+                
+                # 保存学习事件
+                for event in self.learning_events[-1000:]:  # 只保存最近1000个事件
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO learning_events 
+                        (event_id, agent_id, event_type, task_id, outcome, 
+                         performance_score, learning_data, timestamp)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        event.event_id,
+                        event.agent_id,
+                        event.event_type,
+                        event.task_id,
+                        event.outcome,
+                        event.performance_score,
+                        json.dumps(event.learning_data),
+                        event.timestamp.isoformat()
+                    ))
+                
+                # 保存协作记录
+                for record in self.collaboration_history[-500:]:  # 只保存最近500个记录
+                    cursor.execute('''
+                        INSERT OR REPLACE INTO collaboration_records 
+                        (collaboration_id, participating_agents, task_id, 
+                         collaboration_type, outcome, efficiency_score, 
+                         knowledge_shared, timestamp)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        record.collaboration_id,
+                        json.dumps(record.participating_agents),
+                        record.task_id,
+                        record.collaboration_type,
+                        record.outcome,
+                        record.efficiency_score,
+                        json.dumps(record.knowledge_shared),
+                        record.timestamp.isoformat()
+                    ))
+                
+                conn.commit()
+                logger.info("Agent Zero数据持久化完成")
+                
+        except Exception as e:
+            logger.error(f"数据持久化失败: {e}")
 
-# 使用示例
-async def main():
-    """Agent Zero集成使用示例"""
-    print("🤖 Agent Zero集成演示")
-    print("=" * 50)
-    
-    # 初始化Agent Zero集成
-    agent_zero = AgentZeroIntegration()
-    
-    # 等待默认智能体初始化
-    await asyncio.sleep(1)
-    
-    # 分配代码分析任务
-    code_analysis_task = {
-        "type": "code_analysis",
-        "complexity": "medium",
-        "content": "def fibonacci(n): return n if n <= 1 else fibonacci(n-1) + fibonacci(n-2)",
-        "requirements": ["性能分析", "优化建议"]
-    }
-    
-    result1 = await agent_zero.assign_task(code_analysis_task)
-    print(f"✅ 代码分析任务完成")
-    print(f"   执行智能体: {result1['assigned_agent']}")
-    print(f"   任务成功: {result1['task_result']['success']}")
-    
-    # 分配代码生成任务
-    code_generation_task = {
-        "type": "code_generation",
-        "complexity": "high",
-        "requirements": ["生成优化的斐波那契函数", "包含注释和测试"]
-    }
-    
-    result2 = await agent_zero.assign_task(code_generation_task)
-    print(f"✅ 代码生成任务完成")
-    print(f"   执行智能体: {result2['assigned_agent']}")
-    print(f"   执行方法: {result2['task_result']['result']['execution_method']}")
-    
-    # 触发集体学习
-    learning_data = {
-        "topic": "Python性能优化",
-        "examples": ["动态规划", "缓存机制", "算法复杂度分析"],
-        "best_practices": ["避免重复计算", "使用内置函数", "选择合适的数据结构"]
-    }
-    
-    learning_result = await agent_zero.trigger_collective_learning(learning_data)
-    print(f"✅ 集体学习完成")
-    print(f"   参与智能体: {learning_result['participating_agents']} 个")
-    
-    # 获取生态系统状态
-    ecosystem_status = await agent_zero.get_ecosystem_status()
-    
-    print(f"\n📊 Agent Zero生态系统状态:")
-    print(f"   总智能体数: {ecosystem_status['ecosystem_overview']['total_agents']}")
-    print(f"   活跃智能体: {ecosystem_status['ecosystem_overview']['active_agents']}")
-    print(f"   总能力数: {ecosystem_status['ecosystem_overview']['total_capabilities']}")
-    print(f"   总经验数: {ecosystem_status['ecosystem_overview']['total_experiences']}")
-    print(f"   平均能力: {ecosystem_status['ecosystem_overview']['average_competence']:.2f}")
-    print(f"   协作密度: {ecosystem_status['collaboration_network']['collaboration_density']:.2f}")
-    
-    print(f"\n🎯 集成统计:")
-    print(f"   完成任务: {ecosystem_status['integration_stats']['completed_tasks']}")
-    print(f"   协作事件: {ecosystem_status['integration_stats']['collaboration_events']}")
-    print(f"   学习事件: {ecosystem_status['integration_stats']['learning_events']}")
+# 工厂函数
+def get_agent_zero_integration(config_path: str = "./agent_zero_config.json") -> AgentZeroIntegration:
+    """获取Agent Zero集成实例"""
+    return AgentZeroIntegration(config_path)
 
+# 测试和演示
 if __name__ == "__main__":
-    asyncio.run(main())
+    async def test_agent_zero_integration():
+        """测试Agent Zero集成"""
+        agent_zero = get_agent_zero_integration()
+        
+        try:
+            # 启动后台任务
+            await agent_zero.start_background_tasks()
+            
+            # 提交代码分析任务
+            print("📝 提交代码分析任务...")
+            task_id1 = await agent_zero.submit_task(
+                task_type="code_analysis",
+                description="分析Python函数的复杂度和模式",
+                requirements={
+                    "code": """
+def fibonacci(n):
+    if n <= 1:
+        return n
+    return fibonacci(n-1) + fibonacci(n-2)
+
+def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n-1)
+""",
+                    "analysis_type": "comprehensive"
+                },
+                complexity=TaskComplexity.MEDIUM
+            )
+            
+            # 提交代码生成任务
+            print("🔧 提交代码生成任务...")
+            task_id2 = await agent_zero.submit_task(
+                task_type="code_generation",
+                description="生成快速排序算法",
+                requirements={
+                    "type": "algorithm",
+                    "specification": {
+                        "name": "quick_sort",
+                        "type": "sort",
+                        "description": "快速排序算法实现"
+                    }
+                },
+                complexity=TaskComplexity.MEDIUM
+            )
+            
+            # 等待任务完成
+            print("⏳ 等待任务完成...")
+            await asyncio.sleep(5)
+            
+            # 触发集体学习
+            print("🧠 触发集体学习...")
+            learning_result = await agent_zero.trigger_collective_learning(
+                topic="Python性能优化",
+                examples=[
+                    {"technique": "动态规划", "improvement": 0.8},
+                    {"technique": "缓存机制", "improvement": 0.6},
+                    {"technique": "算法优化", "improvement": 0.9}
+                ]
+            )
+            
+            print(f"集体学习结果: 成功率 {learning_result['success_rate']:.1%}")
+            
+            # 获取系统状态
+            print("📊 系统状态...")
+            status = await agent_zero.get_system_status()
+            
+            print(f"总智能体数: {status['system_metrics']['total_agents']}")
+            print(f"已完成任务: {status['system_metrics']['completed_tasks']}")
+            print(f"平均性能: {status['system_metrics']['average_performance']:.1%}")
+            print(f"协作次数: {status['system_metrics']['collaboration_count']}")
+            print(f"学习事件: {status['system_metrics']['learning_events_count']}")
+            
+            print("\n智能体类型分布:")
+            for agent_type, count in status['agent_breakdown'].items():
+                print(f"  - {agent_type}: {count}")
+            
+            print("\n性能分布:")
+            for level, count in status['performance_distribution'].items():
+                print(f"  - {level}: {count}")
+            
+        finally:
+            # 清理
+            await agent_zero.cleanup()
+    
+    # 运行测试
+    asyncio.run(test_agent_zero_integration())
 

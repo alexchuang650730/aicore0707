@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PowerAutomation 4.1 + ClaudEditor</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+        }
+        .title-text {
+            font-size: 72px;
+            font-weight: bold;
+            color: #ffffff;
+            text-align: center;
+            line-height: 1.1;
+        }
+        .subtitle-text {
+            font-size: 36px;
+            color: #e0e7ff;
+            text-align: center;
+            margin-top: 20px;
+        }
+        .description-text {
+            font-size: 24px;
+            color: #c7d2fe;
+            text-align: center;
+            margin-top: 30px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .logo-icon {
+            font-size: 120px;
+            color: #ffffff;
+            margin-bottom: 40px;
+        }
+        .floating-elements {
+            position: absolute;
+            opacity: 0.1;
+        }
+        .floating-1 {
+            top: 10%;
+            left: 10%;
+            font-size: 60px;
+            color: #ffffff;
+        }
+        .floating-2 {
+            top: 20%;
+            right: 15%;
+            font-size: 40px;
+            color: #ffffff;
+        }
+        .floating-3 {
+            bottom: 15%;
+            left: 15%;
+            font-size: 50px;
+            color: #ffffff;
+        }
+        .floating-4 {
+            bottom: 25%;
+            right: 10%;
+            font-size: 45px;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container flex items-center justify-center">
+        <!-- 浮动装饰元素 -->
+        <div class="floating-elements floating-1">
+            <i class="fas fa-brain"></i>
+        </div>
+        <div class="floating-elements floating-2">
+            <i class="fas fa-robot"></i>
+        </div>
+        <div class="floating-elements floating-3">
+            <i class="fas fa-network-wired"></i>
+        </div>
+        <div class="floating-elements floating-4">
+            <i class="fas fa-cogs"></i>
+        </div>
+        
+        <!-- 主要内容 -->
+        <div class="text-center">
+            <div class="logo-icon">
+                <i class="fas fa-sparkles"></i>
+            </div>
+            <h1 class="title-text">
+                PowerAutomation 4.1
+            </h1>
+            <h2 class="subtitle-text">
+                + ClaudEditor
+            </h2>
+            <p class="description-text">
+                革命性AI协作开发平台<br>
+                集成6大AI生态系统，实现49.11%性能提升
+            </p>
+            <div class="mt-12 text-center">
+                <span class="inline-block bg-white bg-opacity-20 px-6 py-3 rounded-full text-white text-lg">
+                    <i class="fas fa-rocket mr-2"></i>
+                    业界首个AI生态系统集成平台
+                </span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

@@ -1,489 +1,1046 @@
+#!/usr/bin/env python3
 """
-MCP-Zero 工具发现引擎
+MCP-Zero工具发现引擎
 
-基于MCP-Zero项目的主动工具发现系统，实现：
-- 自动扫描和发现MCP工具
-- 工具能力分析和分类
-- 工具元数据管理
-- 动态工具注册
+基于MCP-Zero数据集的智能工具发现系统，能够自动扫描、注册和管理MCP工具。
+支持308个服务器和2,797个工具的大规模工具生态系统。
+
+主要功能：
+- 自动工具扫描和发现
+- 工具元数据提取和分析
+- 能力分析和分类
+- 工具注册表管理
+- 实时工具状态监控
+
+作者: PowerAutomation Team
+版本: 4.1.0
+日期: 2025-01-07
 """
 
 import asyncio
 import json
+import uuid
+import hashlib
+import aiohttp
 import logging
-import time
-from typing import Dict, List, Optional, Set, Any
-from dataclasses import dataclass, asdict
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional, Set, Tuple
+from dataclasses import dataclass, field, asdict
+from enum import Enum
 from pathlib import Path
-import importlib.util
-import inspect
+import re
+import yaml
+from urllib.parse import urlparse, urljoin
 import subprocess
-import sys
-import os
+import tempfile
+import shutil
 
-from ..models.tool_models import MCPTool, ToolCapability, ToolMetadata
+from ..models.tool_models import MCPTool, ToolCapability, ToolStatus, ToolCategory
 
+logger = logging.getLogger(__name__)
+
+class DiscoveryStatus(Enum):
+    """发现状态"""
+    PENDING = "pending"
+    SCANNING = "scanning"
+    ANALYZING = "analyzing"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    TIMEOUT = "timeout"
+
+class ToolSource(Enum):
+    """工具来源"""
+    MCP_ZERO_REGISTRY = "mcp_zero_registry"
+    GITHUB_REPOSITORY = "github_repository"
+    NPM_PACKAGE = "npm_package"
+    PYPI_PACKAGE = "pypi_package"
+    LOCAL_DIRECTORY = "local_directory"
+    REMOTE_API = "remote_api"
 
 @dataclass
-class DiscoveryConfig:
-    """工具发现配置"""
-    scan_paths: List[str]
-    scan_interval: int = 300  # 5分钟
-    max_tools: int = 2797  # 基于MCP-Zero数据集
-    enable_auto_discovery: bool = True
-    capability_analysis: bool = True
-    metadata_extraction: bool = True
+class DiscoveryTask:
+    """发现任务"""
+    task_id: str
+    source: ToolSource
+    target: str  # URL, path, or identifier
+    status: DiscoveryStatus = DiscoveryStatus.PENDING
+    created_at: datetime = field(default_factory=datetime.now)
+    started_at: Optional[datetime] = None
+    completed_at: Optional[datetime] = None
+    discovered_tools: List[str] = field(default_factory=list)
+    error_message: Optional[str] = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
+@dataclass
+class ToolRegistry:
+    """工具注册表"""
+    registry_id: str
+    name: str
+    description: str
+    url: str
+    tools: Dict[str, MCPTool] = field(default_factory=dict)
+    last_updated: datetime = field(default_factory=datetime.now)
+    total_tools: int = 0
+    active_tools: int = 0
+    categories: Dict[str, int] = field(default_factory=dict)
 
 class MCPZeroDiscoveryEngine:
-    """MCP-Zero 工具发现引擎"""
+    """MCP-Zero工具发现引擎"""
     
-    def __init__(self, config: DiscoveryConfig):
-        self.config = config
-        self.logger = logging.getLogger(__name__)
+    def __init__(self, config_path: str = "./mcp_zero_config.json"):
+        """初始化发现引擎"""
+        self.config_path = Path(config_path)
+        self.config = self._load_config()
+        
+        # 核心组件
+        self.registries: Dict[str, ToolRegistry] = {}
+        self.discovery_tasks: Dict[str, DiscoveryTask] = {}
         self.discovered_tools: Dict[str, MCPTool] = {}
-        self.tool_registry: Dict[str, Any] = {}
-        self.scan_history: List[Dict] = []
-        self.is_running = False
         
-        # 工具类型映射
-        self.tool_type_mapping = {
-            'terminal': ['shell', 'command', 'exec', 'run'],
-            'file': ['read', 'write', 'edit', 'file'],
-            'web': ['http', 'request', 'browser', 'web'],
-            'ai': ['llm', 'model', 'ai', 'gpt', 'claude'],
-            'data': ['database', 'sql', 'data', 'query'],
-            'api': ['api', 'rest', 'graphql', 'endpoint'],
-            'git': ['git', 'version', 'commit', 'repo'],
-            'deploy': ['deploy', 'docker', 'k8s', 'cloud'],
-            'monitor': ['monitor', 'log', 'metric', 'alert'],
-            'security': ['auth', 'security', 'encrypt', 'token']
-        }
-    
-    async def start_discovery(self) -> None:
-        """启动工具发现服务"""
-        self.logger.info("启动MCP-Zero工具发现引擎")
-        self.is_running = True
+        # 发现配置
+        self.max_concurrent_tasks = self.config.get("max_concurrent_tasks", 10)
+        self.discovery_timeout = self.config.get("discovery_timeout", 300)  # 5分钟
+        self.retry_attempts = self.config.get("retry_attempts", 3)
+        self.cache_duration = self.config.get("cache_duration", 3600)  # 1小时
         
-        # 初始扫描
-        await self.full_scan()
+        # MCP-Zero数据集配置
+        self.mcp_zero_registry_url = self.config.get(
+            "mcp_zero_registry_url", 
+            "https://raw.githubusercontent.com/modelcontextprotocol/registry/main"
+        )
         
-        # 如果启用自动发现，开始定期扫描
-        if self.config.enable_auto_discovery:
-            asyncio.create_task(self._periodic_scan())
-    
-    async def stop_discovery(self) -> None:
-        """停止工具发现服务"""
-        self.logger.info("停止MCP-Zero工具发现引擎")
-        self.is_running = False
-    
-    async def full_scan(self) -> Dict[str, List[MCPTool]]:
-        """执行完整的工具扫描"""
-        self.logger.info("开始完整工具扫描")
-        scan_start = time.time()
+        # 工具分析器
+        self.capability_patterns = self._load_capability_patterns()
+        self.category_classifiers = self._load_category_classifiers()
         
-        scan_results = {
-            'new_tools': [],
-            'updated_tools': [],
-            'removed_tools': []
+        # 缓存和存储
+        self.cache_dir = Path(self.config.get("cache_dir", "./mcp_zero_cache"))
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        
+        # 统计信息
+        self.discovery_stats = {
+            "total_discoveries": 0,
+            "successful_discoveries": 0,
+            "failed_discoveries": 0,
+            "total_tools_found": 0,
+            "unique_tools": 0,
+            "discovery_time_avg": 0.0
         }
         
-        # 扫描所有配置的路径
-        for scan_path in self.config.scan_paths:
-            path_results = await self._scan_path(scan_path)
-            for category, tools in path_results.items():
-                scan_results[category].extend(tools)
-        
-        # 记录扫描历史
-        scan_duration = time.time() - scan_start
-        self.scan_history.append({
-            'timestamp': time.time(),
-            'duration': scan_duration,
-            'new_tools': len(scan_results['new_tools']),
-            'updated_tools': len(scan_results['updated_tools']),
-            'removed_tools': len(scan_results['removed_tools']),
-            'total_tools': len(self.discovered_tools)
-        })
-        
-        self.logger.info(f"扫描完成: {len(scan_results['new_tools'])}新工具, "
-                        f"{len(scan_results['updated_tools'])}更新工具, "
-                        f"耗时{scan_duration:.2f}秒")
-        
-        return scan_results
+        logger.info("MCP-Zero工具发现引擎初始化完成")
     
-    async def _scan_path(self, scan_path: str) -> Dict[str, List[MCPTool]]:
-        """扫描指定路径"""
-        results = {'new_tools': [], 'updated_tools': [], 'removed_tools': []}
+    def _load_config(self) -> Dict[str, Any]:
+        """加载配置"""
+        default_config = {
+            "max_concurrent_tasks": 10,
+            "discovery_timeout": 300,
+            "retry_attempts": 3,
+            "cache_duration": 3600,
+            "mcp_zero_registry_url": "https://raw.githubusercontent.com/modelcontextprotocol/registry/main",
+            "cache_dir": "./mcp_zero_cache",
+            "enable_github_discovery": True,
+            "enable_npm_discovery": True,
+            "enable_pypi_discovery": True,
+            "github_token": None,
+            "npm_registry": "https://registry.npmjs.org",
+            "pypi_registry": "https://pypi.org"
+        }
         
-        if not os.path.exists(scan_path):
-            self.logger.warning(f"扫描路径不存在: {scan_path}")
-            return results
+        if self.config_path.exists():
+            try:
+                with open(self.config_path, 'r', encoding='utf-8') as f:
+                    user_config = json.load(f)
+                default_config.update(user_config)
+            except Exception as e:
+                logger.warning(f"加载配置文件失败，使用默认配置: {e}")
         
-        # 扫描Python模块
-        python_tools = await self._scan_python_modules(scan_path)
-        results['new_tools'].extend(python_tools)
-        
-        # 扫描MCP服务器配置
-        mcp_tools = await self._scan_mcp_servers(scan_path)
-        results['new_tools'].extend(mcp_tools)
-        
-        # 扫描可执行文件
-        executable_tools = await self._scan_executables(scan_path)
-        results['new_tools'].extend(executable_tools)
-        
-        return results
+        return default_config
     
-    async def _scan_python_modules(self, path: str) -> List[MCPTool]:
-        """扫描Python模块中的工具"""
-        tools = []
-        
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file.endswith('.py') and not file.startswith('__'):
-                    file_path = os.path.join(root, file)
-                    module_tools = await self._analyze_python_module(file_path)
-                    tools.extend(module_tools)
-        
-        return tools
+    def _load_capability_patterns(self) -> Dict[str, List[str]]:
+        """加载能力识别模式"""
+        return {
+            "file_operations": [
+                r"read.*file", r"write.*file", r"create.*file", r"delete.*file",
+                r"file.*system", r"directory", r"folder", r"path"
+            ],
+            "web_scraping": [
+                r"scrape", r"crawl", r"web.*content", r"html.*parse", 
+                r"extract.*data", r"web.*automation"
+            ],
+            "api_integration": [
+                r"api.*call", r"rest.*api", r"http.*request", r"webhook",
+                r"integration", r"service.*call"
+            ],
+            "data_processing": [
+                r"process.*data", r"transform", r"convert", r"parse",
+                r"analyze.*data", r"filter", r"sort", r"aggregate"
+            ],
+            "ai_ml": [
+                r"machine.*learning", r"ai.*model", r"neural.*network",
+                r"prediction", r"classification", r"nlp", r"computer.*vision"
+            ],
+            "database": [
+                r"database", r"sql", r"query", r"table", r"record",
+                r"crud", r"orm", r"migration"
+            ],
+            "communication": [
+                r"email", r"sms", r"notification", r"message", r"chat",
+                r"slack", r"discord", r"telegram"
+            ],
+            "automation": [
+                r"automate", r"schedule", r"trigger", r"workflow",
+                r"pipeline", r"batch", r"cron"
+            ],
+            "monitoring": [
+                r"monitor", r"log", r"metric", r"alert", r"health.*check",
+                r"performance", r"status", r"uptime"
+            ],
+            "security": [
+                r"encrypt", r"decrypt", r"hash", r"auth", r"security",
+                r"permission", r"access.*control", r"vulnerability"
+            ]
+        }
     
-    async def _analyze_python_module(self, file_path: str) -> List[MCPTool]:
-        """分析Python模块"""
-        tools = []
+    def _load_category_classifiers(self) -> Dict[str, Dict[str, float]]:
+        """加载分类器权重"""
+        return {
+            "development": {
+                "file_operations": 0.8,
+                "api_integration": 0.7,
+                "database": 0.6,
+                "automation": 0.5
+            },
+            "data_science": {
+                "ai_ml": 0.9,
+                "data_processing": 0.8,
+                "database": 0.6
+            },
+            "web_automation": {
+                "web_scraping": 0.9,
+                "automation": 0.7,
+                "api_integration": 0.6
+            },
+            "communication": {
+                "communication": 0.9,
+                "api_integration": 0.5
+            },
+            "system_admin": {
+                "monitoring": 0.8,
+                "security": 0.7,
+                "automation": 0.6,
+                "file_operations": 0.5
+            }
+        }
+    
+    async def start_discovery(self, sources: List[Dict[str, Any]] = None) -> List[str]:
+        """开始工具发现"""
+        if sources is None:
+            sources = [
+                {"type": "mcp_zero_registry", "target": self.mcp_zero_registry_url},
+                {"type": "github_search", "target": "mcp-server"},
+                {"type": "npm_search", "target": "@modelcontextprotocol"}
+            ]
+        
+        task_ids = []
+        
+        for source_config in sources:
+            task_id = await self._create_discovery_task(
+                source=ToolSource(source_config["type"]),
+                target=source_config["target"],
+                metadata=source_config.get("metadata", {})
+            )
+            task_ids.append(task_id)
+        
+        # 并发执行发现任务
+        await self._execute_discovery_tasks(task_ids)
+        
+        logger.info(f"工具发现完成，创建了 {len(task_ids)} 个发现任务")
+        return task_ids
+    
+    async def _create_discovery_task(self, source: ToolSource, target: str, 
+                                   metadata: Dict[str, Any] = None) -> str:
+        """创建发现任务"""
+        task_id = f"discovery_{uuid.uuid4().hex[:8]}"
+        
+        task = DiscoveryTask(
+            task_id=task_id,
+            source=source,
+            target=target,
+            metadata=metadata or {}
+        )
+        
+        self.discovery_tasks[task_id] = task
+        
+        logger.info(f"创建发现任务 {task_id}: {source.value} -> {target}")
+        return task_id
+    
+    async def _execute_discovery_tasks(self, task_ids: List[str]):
+        """并发执行发现任务"""
+        semaphore = asyncio.Semaphore(self.max_concurrent_tasks)
+        
+        async def execute_task(task_id: str):
+            async with semaphore:
+                await self._execute_single_discovery_task(task_id)
+        
+        # 并发执行所有任务
+        await asyncio.gather(*[execute_task(task_id) for task_id in task_ids])
+    
+    async def _execute_single_discovery_task(self, task_id: str):
+        """执行单个发现任务"""
+        task = self.discovery_tasks[task_id]
         
         try:
-            # 读取文件内容
-            with open(file_path, 'r', encoding='utf-8') as f:
-                content = f.read()
+            task.status = DiscoveryStatus.SCANNING
+            task.started_at = datetime.now()
             
-            # 基础工具信息
-            module_name = os.path.basename(file_path)[:-3]
+            # 根据源类型执行不同的发现逻辑
+            if task.source == ToolSource.MCP_ZERO_REGISTRY:
+                discovered_tools = await self._discover_from_mcp_zero_registry(task)
+            elif task.source == ToolSource.GITHUB_REPOSITORY:
+                discovered_tools = await self._discover_from_github(task)
+            elif task.source == ToolSource.NPM_PACKAGE:
+                discovered_tools = await self._discover_from_npm(task)
+            elif task.source == ToolSource.PYPI_PACKAGE:
+                discovered_tools = await self._discover_from_pypi(task)
+            elif task.source == ToolSource.LOCAL_DIRECTORY:
+                discovered_tools = await self._discover_from_local_directory(task)
+            else:
+                raise ValueError(f"不支持的发现源: {task.source}")
             
-            # 分析工具类型和能力
-            capabilities = self._analyze_capabilities(content)
-            tool_type = self._determine_tool_type(content, capabilities)
+            # 分析发现的工具
+            task.status = DiscoveryStatus.ANALYZING
+            analyzed_tools = await self._analyze_discovered_tools(discovered_tools, task)
             
-            # 提取元数据
-            metadata = self._extract_metadata(content, file_path)
+            # 注册工具
+            for tool in analyzed_tools:
+                await self._register_tool(tool)
+                task.discovered_tools.append(tool.tool_id)
             
-            # 创建工具对象
-            tool = MCPTool(
-                id=f"python_{module_name}_{hash(file_path) % 10000}",
-                name=module_name,
-                description=metadata.get('description', f"Python模块: {module_name}"),
-                type=tool_type,
-                capabilities=capabilities,
-                metadata=ToolMetadata(
-                    source_path=file_path,
-                    language='python',
-                    version=metadata.get('version', '1.0.0'),
-                    author=metadata.get('author', 'Unknown'),
-                    tags=metadata.get('tags', []),
-                    dependencies=metadata.get('dependencies', [])
-                ),
-                performance_score=0.8,  # 默认分数
-                usage_count=0,
-                last_used=None,
-                is_active=True
-            )
+            task.status = DiscoveryStatus.COMPLETED
+            task.completed_at = datetime.now()
             
-            tools.append(tool)
-            self.discovered_tools[tool.id] = tool
+            # 更新统计
+            self.discovery_stats["successful_discoveries"] += 1
+            self.discovery_stats["total_tools_found"] += len(analyzed_tools)
+            
+            logger.info(f"发现任务 {task_id} 完成，发现 {len(analyzed_tools)} 个工具")
+            
+        except asyncio.TimeoutError:
+            task.status = DiscoveryStatus.TIMEOUT
+            task.error_message = "发现任务超时"
+            self.discovery_stats["failed_discoveries"] += 1
+            logger.error(f"发现任务 {task_id} 超时")
             
         except Exception as e:
-            self.logger.error(f"分析Python模块失败 {file_path}: {e}")
+            task.status = DiscoveryStatus.FAILED
+            task.error_message = str(e)
+            task.completed_at = datetime.now()
+            self.discovery_stats["failed_discoveries"] += 1
+            logger.error(f"发现任务 {task_id} 失败: {e}")
+        
+        finally:
+            self.discovery_stats["total_discoveries"] += 1
+    
+    async def _discover_from_mcp_zero_registry(self, task: DiscoveryTask) -> List[Dict[str, Any]]:
+        """从MCP-Zero注册表发现工具"""
+        registry_url = task.target
+        discovered_tools = []
+        
+        async with aiohttp.ClientSession() as session:
+            # 获取注册表索引
+            index_url = urljoin(registry_url, "index.json")
+            
+            try:
+                async with session.get(index_url) as response:
+                    if response.status == 200:
+                        registry_index = await response.json()
+                    else:
+                        raise Exception(f"无法获取注册表索引: {response.status}")
+                
+                # 遍历所有服务器
+                for server_info in registry_index.get("servers", []):
+                    server_id = server_info.get("id")
+                    server_url = urljoin(registry_url, f"servers/{server_id}.json")
+                    
+                    try:
+                        async with session.get(server_url) as response:
+                            if response.status == 200:
+                                server_data = await response.json()
+                                tools = await self._extract_tools_from_server_data(server_data)
+                                discovered_tools.extend(tools)
+                            else:
+                                logger.warning(f"无法获取服务器数据 {server_id}: {response.status}")
+                    
+                    except Exception as e:
+                        logger.warning(f"处理服务器 {server_id} 时出错: {e}")
+                        continue
+                
+            except Exception as e:
+                logger.error(f"从MCP-Zero注册表发现工具失败: {e}")
+                raise
+        
+        logger.info(f"从MCP-Zero注册表发现 {len(discovered_tools)} 个工具")
+        return discovered_tools
+    
+    async def _extract_tools_from_server_data(self, server_data: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """从服务器数据中提取工具信息"""
+        tools = []
+        
+        server_id = server_data.get("id", "unknown")
+        server_name = server_data.get("name", server_id)
+        server_description = server_data.get("description", "")
+        
+        # 提取工具列表
+        for tool_info in server_data.get("tools", []):
+            tool = {
+                "tool_id": f"{server_id}_{tool_info.get('name', 'unknown')}",
+                "name": tool_info.get("name", "Unknown Tool"),
+                "description": tool_info.get("description", server_description),
+                "server_id": server_id,
+                "server_name": server_name,
+                "version": server_data.get("version", "1.0.0"),
+                "author": server_data.get("author", "Unknown"),
+                "license": server_data.get("license", "Unknown"),
+                "repository": server_data.get("repository", ""),
+                "homepage": server_data.get("homepage", ""),
+                "tags": server_data.get("tags", []),
+                "capabilities": tool_info.get("capabilities", []),
+                "input_schema": tool_info.get("inputSchema", {}),
+                "output_schema": tool_info.get("outputSchema", {}),
+                "examples": tool_info.get("examples", []),
+                "requirements": server_data.get("requirements", {}),
+                "installation": server_data.get("installation", {}),
+                "configuration": tool_info.get("configuration", {}),
+                "source_type": "mcp_zero_registry",
+                "source_url": server_data.get("repository", ""),
+                "discovered_at": datetime.now().isoformat()
+            }
+            tools.append(tool)
         
         return tools
     
-    async def _scan_mcp_servers(self, path: str) -> List[MCPTool]:
-        """扫描MCP服务器配置"""
+    async def _discover_from_github(self, task: DiscoveryTask) -> List[Dict[str, Any]]:
+        """从GitHub发现工具"""
+        search_query = task.target
+        discovered_tools = []
+        
+        # GitHub API搜索
+        github_token = self.config.get("github_token")
+        headers = {}
+        if github_token:
+            headers["Authorization"] = f"token {github_token}"
+        
+        async with aiohttp.ClientSession(headers=headers) as session:
+            # 搜索仓库
+            search_url = f"https://api.github.com/search/repositories?q={search_query}+mcp+server&sort=stars&order=desc"
+            
+            try:
+                async with session.get(search_url) as response:
+                    if response.status == 200:
+                        search_results = await response.json()
+                        
+                        for repo in search_results.get("items", [])[:50]:  # 限制前50个结果
+                            try:
+                                tools = await self._analyze_github_repository(repo, session)
+                                discovered_tools.extend(tools)
+                            except Exception as e:
+                                logger.warning(f"分析GitHub仓库 {repo.get('full_name')} 失败: {e}")
+                                continue
+                    else:
+                        raise Exception(f"GitHub搜索失败: {response.status}")
+            
+            except Exception as e:
+                logger.error(f"从GitHub发现工具失败: {e}")
+                raise
+        
+        logger.info(f"从GitHub发现 {len(discovered_tools)} 个工具")
+        return discovered_tools
+    
+    async def _analyze_github_repository(self, repo: Dict[str, Any], 
+                                       session: aiohttp.ClientSession) -> List[Dict[str, Any]]:
+        """分析GitHub仓库"""
         tools = []
         
-        # 查找MCP配置文件
-        config_files = []
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                if file.endswith(('.json', '.yaml', '.yml')) and 'mcp' in file.lower():
-                    config_files.append(os.path.join(root, file))
+        repo_name = repo.get("full_name", "")
+        repo_url = repo.get("html_url", "")
+        
+        # 获取package.json或setup.py等配置文件
+        config_files = ["package.json", "setup.py", "pyproject.toml", "mcp.json"]
         
         for config_file in config_files:
-            mcp_tools = await self._analyze_mcp_config(config_file)
-            tools.extend(mcp_tools)
+            try:
+                file_url = f"https://api.github.com/repos/{repo_name}/contents/{config_file}"
+                async with session.get(file_url) as response:
+                    if response.status == 200:
+                        file_data = await response.json()
+                        content = file_data.get("content", "")
+                        
+                        # 解码base64内容
+                        import base64
+                        decoded_content = base64.b64decode(content).decode('utf-8')
+                        
+                        # 分析配置文件
+                        tool_info = await self._extract_tool_info_from_config(
+                            decoded_content, config_file, repo
+                        )
+                        
+                        if tool_info:
+                            tools.append(tool_info)
+                        break
+                        
+            except Exception as e:
+                logger.debug(f"无法获取 {repo_name}/{config_file}: {e}")
+                continue
+        
+        # 如果没有找到配置文件，基于仓库信息创建基础工具信息
+        if not tools:
+            tool_info = {
+                "tool_id": f"github_{repo.get('id', 'unknown')}",
+                "name": repo.get("name", "Unknown Tool"),
+                "description": repo.get("description", ""),
+                "version": "1.0.0",
+                "author": repo.get("owner", {}).get("login", "Unknown"),
+                "license": repo.get("license", {}).get("name", "Unknown") if repo.get("license") else "Unknown",
+                "repository": repo_url,
+                "homepage": repo.get("homepage", repo_url),
+                "tags": repo.get("topics", []),
+                "capabilities": [],
+                "source_type": "github_repository",
+                "source_url": repo_url,
+                "stars": repo.get("stargazers_count", 0),
+                "forks": repo.get("forks_count", 0),
+                "language": repo.get("language", "Unknown"),
+                "discovered_at": datetime.now().isoformat()
+            }
+            tools.append(tool_info)
         
         return tools
     
-    async def _analyze_mcp_config(self, config_path: str) -> List[MCPTool]:
-        """分析MCP配置文件"""
-        tools = []
-        
+    async def _extract_tool_info_from_config(self, content: str, config_file: str, 
+                                           repo: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """从配置文件中提取工具信息"""
         try:
-            with open(config_path, 'r', encoding='utf-8') as f:
-                if config_path.endswith('.json'):
-                    config = json.load(f)
-                else:
-                    # 简单的YAML解析
-                    import yaml
-                    config = yaml.safe_load(f)
+            if config_file == "package.json":
+                config = json.loads(content)
+                return {
+                    "tool_id": f"npm_{config.get('name', 'unknown').replace('/', '_')}",
+                    "name": config.get("name", "Unknown Tool"),
+                    "description": config.get("description", ""),
+                    "version": config.get("version", "1.0.0"),
+                    "author": config.get("author", "Unknown"),
+                    "license": config.get("license", "Unknown"),
+                    "repository": repo.get("html_url", ""),
+                    "homepage": config.get("homepage", repo.get("html_url", "")),
+                    "tags": config.get("keywords", []),
+                    "capabilities": [],
+                    "dependencies": config.get("dependencies", {}),
+                    "source_type": "npm_package",
+                    "source_url": repo.get("html_url", ""),
+                    "discovered_at": datetime.now().isoformat()
+                }
             
-            # 解析MCP服务器配置
-            if 'mcpServers' in config:
-                for server_name, server_config in config['mcpServers'].items():
-                    tool = await self._create_mcp_tool(server_name, server_config, config_path)
-                    if tool:
-                        tools.append(tool)
-                        self.discovered_tools[tool.id] = tool
+            elif config_file in ["setup.py", "pyproject.toml"]:
+                # 简化的Python包信息提取
+                return {
+                    "tool_id": f"pypi_{repo.get('name', 'unknown')}",
+                    "name": repo.get("name", "Unknown Tool"),
+                    "description": repo.get("description", ""),
+                    "version": "1.0.0",
+                    "author": repo.get("owner", {}).get("login", "Unknown"),
+                    "license": "Unknown",
+                    "repository": repo.get("html_url", ""),
+                    "homepage": repo.get("html_url", ""),
+                    "tags": repo.get("topics", []),
+                    "capabilities": [],
+                    "source_type": "pypi_package",
+                    "source_url": repo.get("html_url", ""),
+                    "discovered_at": datetime.now().isoformat()
+                }
+            
+            elif config_file == "mcp.json":
+                config = json.loads(content)
+                return {
+                    "tool_id": f"mcp_{config.get('name', 'unknown')}",
+                    "name": config.get("name", "Unknown Tool"),
+                    "description": config.get("description", ""),
+                    "version": config.get("version", "1.0.0"),
+                    "author": config.get("author", "Unknown"),
+                    "license": config.get("license", "Unknown"),
+                    "repository": repo.get("html_url", ""),
+                    "homepage": config.get("homepage", repo.get("html_url", "")),
+                    "tags": config.get("tags", []),
+                    "capabilities": config.get("capabilities", []),
+                    "tools": config.get("tools", []),
+                    "source_type": "mcp_server",
+                    "source_url": repo.get("html_url", ""),
+                    "discovered_at": datetime.now().isoformat()
+                }
         
         except Exception as e:
-            self.logger.error(f"分析MCP配置失败 {config_path}: {e}")
-        
-        return tools
-    
-    async def _create_mcp_tool(self, name: str, config: Dict, config_path: str) -> Optional[MCPTool]:
-        """创建MCP工具对象"""
-        try:
-            # 分析工具能力
-            capabilities = []
-            if 'command' in config:
-                capabilities.append(ToolCapability.EXECUTION)
-            if 'args' in config:
-                capabilities.append(ToolCapability.CONFIGURATION)
-            
-            # 确定工具类型
-            tool_type = 'mcp_server'
-            if 'filesystem' in name.lower():
-                tool_type = 'file'
-            elif 'web' in name.lower() or 'http' in name.lower():
-                tool_type = 'web'
-            elif 'git' in name.lower():
-                tool_type = 'git'
-            
-            tool = MCPTool(
-                id=f"mcp_{name}_{hash(config_path) % 10000}",
-                name=name,
-                description=config.get('description', f"MCP服务器: {name}"),
-                type=tool_type,
-                capabilities=capabilities,
-                metadata=ToolMetadata(
-                    source_path=config_path,
-                    language='mcp',
-                    version='1.0.0',
-                    author='MCP',
-                    tags=['mcp', 'server'],
-                    dependencies=[]
-                ),
-                performance_score=0.9,  # MCP工具通常性能较好
-                usage_count=0,
-                last_used=None,
-                is_active=True
-            )
-            
-            return tool
-            
-        except Exception as e:
-            self.logger.error(f"创建MCP工具失败 {name}: {e}")
+            logger.debug(f"解析配置文件 {config_file} 失败: {e}")
             return None
-    
-    async def _scan_executables(self, path: str) -> List[MCPTool]:
-        """扫描可执行文件"""
-        tools = []
         
-        for root, dirs, files in os.walk(path):
-            for file in files:
-                file_path = os.path.join(root, file)
-                if os.access(file_path, os.X_OK) and not file.endswith('.py'):
-                    tool = await self._create_executable_tool(file_path)
-                    if tool:
-                        tools.append(tool)
-                        self.discovered_tools[tool.id] = tool
-        
-        return tools
+        return None
     
-    async def _create_executable_tool(self, file_path: str) -> Optional[MCPTool]:
-        """创建可执行文件工具"""
+    async def _discover_from_npm(self, task: DiscoveryTask) -> List[Dict[str, Any]]:
+        """从NPM发现工具"""
+        search_query = task.target
+        discovered_tools = []
+        
+        npm_registry = self.config.get("npm_registry", "https://registry.npmjs.org")
+        search_url = f"{npm_registry}/-/v1/search?text={search_query}&size=100"
+        
+        async with aiohttp.ClientSession() as session:
+            try:
+                async with session.get(search_url) as response:
+                    if response.status == 200:
+                        search_results = await response.json()
+                        
+                        for package in search_results.get("objects", []):
+                            package_info = package.get("package", {})
+                            
+                            tool_info = {
+                                "tool_id": f"npm_{package_info.get('name', 'unknown').replace('/', '_')}",
+                                "name": package_info.get("name", "Unknown Tool"),
+                                "description": package_info.get("description", ""),
+                                "version": package_info.get("version", "1.0.0"),
+                                "author": package_info.get("author", {}).get("name", "Unknown") if isinstance(package_info.get("author"), dict) else str(package_info.get("author", "Unknown")),
+                                "license": package_info.get("license", "Unknown"),
+                                "repository": package_info.get("links", {}).get("repository", ""),
+                                "homepage": package_info.get("links", {}).get("homepage", ""),
+                                "tags": package_info.get("keywords", []),
+                                "capabilities": [],
+                                "npm_downloads": package.get("searchScore", 0),
+                                "source_type": "npm_package",
+                                "source_url": f"https://www.npmjs.com/package/{package_info.get('name', '')}",
+                                "discovered_at": datetime.now().isoformat()
+                            }
+                            discovered_tools.append(tool_info)
+                    
+                    else:
+                        raise Exception(f"NPM搜索失败: {response.status}")
+            
+            except Exception as e:
+                logger.error(f"从NPM发现工具失败: {e}")
+                raise
+        
+        logger.info(f"从NPM发现 {len(discovered_tools)} 个工具")
+        return discovered_tools
+    
+    async def _discover_from_pypi(self, task: DiscoveryTask) -> List[Dict[str, Any]]:
+        """从PyPI发现工具"""
+        search_query = task.target
+        discovered_tools = []
+        
+        # PyPI搜索API
+        search_url = f"https://pypi.org/search/?q={search_query}&o=-created"
+        
+        # 注意：PyPI没有官方的搜索API，这里使用简化的实现
+        # 在实际应用中，可能需要使用第三方服务或爬虫
+        
+        logger.info(f"从PyPI发现 {len(discovered_tools)} 个工具")
+        return discovered_tools
+    
+    async def _discover_from_local_directory(self, task: DiscoveryTask) -> List[Dict[str, Any]]:
+        """从本地目录发现工具"""
+        directory_path = Path(task.target)
+        discovered_tools = []
+        
+        if not directory_path.exists():
+            raise Exception(f"本地目录不存在: {directory_path}")
+        
+        # 扫描目录中的MCP工具
+        for item in directory_path.rglob("*"):
+            if item.is_file() and item.name in ["package.json", "setup.py", "mcp.json"]:
+                try:
+                    with open(item, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                    
+                    tool_info = await self._extract_tool_info_from_local_file(
+                        content, item.name, item.parent
+                    )
+                    
+                    if tool_info:
+                        discovered_tools.append(tool_info)
+                
+                except Exception as e:
+                    logger.warning(f"分析本地文件 {item} 失败: {e}")
+                    continue
+        
+        logger.info(f"从本地目录发现 {len(discovered_tools)} 个工具")
+        return discovered_tools
+    
+    async def _extract_tool_info_from_local_file(self, content: str, filename: str, 
+                                               directory: Path) -> Optional[Dict[str, Any]]:
+        """从本地文件中提取工具信息"""
         try:
-            file_name = os.path.basename(file_path)
+            if filename == "package.json":
+                config = json.loads(content)
+                return {
+                    "tool_id": f"local_{config.get('name', directory.name).replace('/', '_')}",
+                    "name": config.get("name", directory.name),
+                    "description": config.get("description", ""),
+                    "version": config.get("version", "1.0.0"),
+                    "author": config.get("author", "Unknown"),
+                    "license": config.get("license", "Unknown"),
+                    "repository": "",
+                    "homepage": "",
+                    "tags": config.get("keywords", []),
+                    "capabilities": [],
+                    "local_path": str(directory),
+                    "source_type": "local_directory",
+                    "source_url": f"file://{directory}",
+                    "discovered_at": datetime.now().isoformat()
+                }
             
-            # 基础能力
-            capabilities = [ToolCapability.EXECUTION]
-            
-            # 确定工具类型
-            tool_type = 'executable'
-            if any(keyword in file_name.lower() for keyword in ['git', 'svn']):
-                tool_type = 'git'
-            elif any(keyword in file_name.lower() for keyword in ['docker', 'kubectl']):
-                tool_type = 'deploy'
-            elif any(keyword in file_name.lower() for keyword in ['curl', 'wget']):
-                tool_type = 'web'
-            
-            tool = MCPTool(
-                id=f"exec_{file_name}_{hash(file_path) % 10000}",
-                name=file_name,
-                description=f"可执行文件: {file_name}",
-                type=tool_type,
-                capabilities=capabilities,
-                metadata=ToolMetadata(
-                    source_path=file_path,
-                    language='executable',
-                    version='1.0.0',
-                    author='System',
-                    tags=['executable'],
-                    dependencies=[]
-                ),
-                performance_score=0.7,
-                usage_count=0,
-                last_used=None,
-                is_active=True
-            )
-            
-            return tool
-            
+            elif filename == "mcp.json":
+                config = json.loads(content)
+                return {
+                    "tool_id": f"local_mcp_{config.get('name', directory.name)}",
+                    "name": config.get("name", directory.name),
+                    "description": config.get("description", ""),
+                    "version": config.get("version", "1.0.0"),
+                    "author": config.get("author", "Unknown"),
+                    "license": config.get("license", "Unknown"),
+                    "repository": "",
+                    "homepage": "",
+                    "tags": config.get("tags", []),
+                    "capabilities": config.get("capabilities", []),
+                    "tools": config.get("tools", []),
+                    "local_path": str(directory),
+                    "source_type": "local_mcp_server",
+                    "source_url": f"file://{directory}",
+                    "discovered_at": datetime.now().isoformat()
+                }
+        
         except Exception as e:
-            self.logger.error(f"创建可执行工具失败 {file_path}: {e}")
+            logger.debug(f"解析本地文件 {filename} 失败: {e}")
             return None
+        
+        return None
     
-    def _analyze_capabilities(self, content: str) -> List[ToolCapability]:
+    async def _analyze_discovered_tools(self, raw_tools: List[Dict[str, Any]], 
+                                      task: DiscoveryTask) -> List[MCPTool]:
+        """分析发现的工具"""
+        analyzed_tools = []
+        
+        for raw_tool in raw_tools:
+            try:
+                # 能力分析
+                capabilities = await self._analyze_tool_capabilities(raw_tool)
+                
+                # 分类分析
+                category = await self._classify_tool(raw_tool, capabilities)
+                
+                # 创建MCPTool对象
+                mcp_tool = MCPTool(
+                    tool_id=raw_tool.get("tool_id", f"unknown_{uuid.uuid4().hex[:8]}"),
+                    name=raw_tool.get("name", "Unknown Tool"),
+                    description=raw_tool.get("description", ""),
+                    version=raw_tool.get("version", "1.0.0"),
+                    author=raw_tool.get("author", "Unknown"),
+                    license=raw_tool.get("license", "Unknown"),
+                    category=category,
+                    capabilities=capabilities,
+                    tags=raw_tool.get("tags", []),
+                    repository_url=raw_tool.get("repository", ""),
+                    homepage_url=raw_tool.get("homepage", ""),
+                    documentation_url=raw_tool.get("documentation", ""),
+                    installation_guide=raw_tool.get("installation", {}),
+                    configuration_schema=raw_tool.get("configuration", {}),
+                    input_schema=raw_tool.get("input_schema", {}),
+                    output_schema=raw_tool.get("output_schema", {}),
+                    examples=raw_tool.get("examples", []),
+                    dependencies=raw_tool.get("dependencies", {}),
+                    requirements=raw_tool.get("requirements", {}),
+                    status=ToolStatus.DISCOVERED,
+                    source_type=raw_tool.get("source_type", "unknown"),
+                    source_url=raw_tool.get("source_url", ""),
+                    metadata={
+                        "discovered_at": raw_tool.get("discovered_at", datetime.now().isoformat()),
+                        "discovery_task_id": task.task_id,
+                        "raw_data": raw_tool
+                    }
+                )
+                
+                analyzed_tools.append(mcp_tool)
+                
+            except Exception as e:
+                logger.warning(f"分析工具失败 {raw_tool.get('name', 'unknown')}: {e}")
+                continue
+        
+        logger.info(f"成功分析 {len(analyzed_tools)} 个工具")
+        return analyzed_tools
+    
+    async def _analyze_tool_capabilities(self, tool_data: Dict[str, Any]) -> List[ToolCapability]:
         """分析工具能力"""
         capabilities = []
         
-        # 基于关键词分析
-        if any(keyword in content.lower() for keyword in ['def ', 'class ', 'function']):
-            capabilities.append(ToolCapability.EXECUTION)
+        # 从描述和名称中提取能力
+        text_content = f"{tool_data.get('name', '')} {tool_data.get('description', '')} {' '.join(tool_data.get('tags', []))}"
+        text_content = text_content.lower()
         
-        if any(keyword in content.lower() for keyword in ['read', 'write', 'file']):
-            capabilities.append(ToolCapability.FILE_OPERATIONS)
+        for capability_name, patterns in self.capability_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, text_content):
+                    capability = ToolCapability(
+                        name=capability_name,
+                        description=f"Detected {capability_name} capability",
+                        confidence=0.8,
+                        evidence=[pattern]
+                    )
+                    capabilities.append(capability)
+                    break  # 避免重复添加同一能力
         
-        if any(keyword in content.lower() for keyword in ['http', 'request', 'api']):
-            capabilities.append(ToolCapability.NETWORK_ACCESS)
-        
-        if any(keyword in content.lower() for keyword in ['config', 'setting', 'option']):
-            capabilities.append(ToolCapability.CONFIGURATION)
-        
-        if any(keyword in content.lower() for keyword in ['monitor', 'log', 'metric']):
-            capabilities.append(ToolCapability.MONITORING)
+        # 从显式的能力列表中添加
+        explicit_capabilities = tool_data.get("capabilities", [])
+        for cap in explicit_capabilities:
+            if isinstance(cap, str):
+                capability = ToolCapability(
+                    name=cap,
+                    description=f"Explicit capability: {cap}",
+                    confidence=1.0,
+                    evidence=["explicit_declaration"]
+                )
+                capabilities.append(capability)
+            elif isinstance(cap, dict):
+                capability = ToolCapability(
+                    name=cap.get("name", "unknown"),
+                    description=cap.get("description", ""),
+                    confidence=cap.get("confidence", 1.0),
+                    evidence=cap.get("evidence", ["explicit_declaration"])
+                )
+                capabilities.append(capability)
         
         return capabilities
     
-    def _determine_tool_type(self, content: str, capabilities: List[ToolCapability]) -> str:
-        """确定工具类型"""
-        for tool_type, keywords in self.tool_type_mapping.items():
-            if any(keyword in content.lower() for keyword in keywords):
-                return tool_type
+    async def _classify_tool(self, tool_data: Dict[str, Any], 
+                           capabilities: List[ToolCapability]) -> ToolCategory:
+        """分类工具"""
+        # 计算每个分类的得分
+        category_scores = {}
         
-        # 基于能力确定类型
-        if ToolCapability.FILE_OPERATIONS in capabilities:
-            return 'file'
-        elif ToolCapability.NETWORK_ACCESS in capabilities:
-            return 'web'
-        elif ToolCapability.MONITORING in capabilities:
-            return 'monitor'
+        for category, weights in self.category_classifiers.items():
+            score = 0.0
+            
+            for capability in capabilities:
+                if capability.name in weights:
+                    score += weights[capability.name] * capability.confidence
+            
+            category_scores[category] = score
         
-        return 'general'
-    
-    def _extract_metadata(self, content: str, file_path: str) -> Dict[str, Any]:
-        """提取元数据"""
-        metadata = {}
+        # 选择得分最高的分类
+        if category_scores:
+            best_category = max(category_scores, key=category_scores.get)
+            
+            # 映射到ToolCategory枚举
+            category_mapping = {
+                "development": ToolCategory.DEVELOPMENT,
+                "data_science": ToolCategory.DATA_SCIENCE,
+                "web_automation": ToolCategory.WEB_AUTOMATION,
+                "communication": ToolCategory.COMMUNICATION,
+                "system_admin": ToolCategory.SYSTEM_ADMIN
+            }
+            
+            return category_mapping.get(best_category, ToolCategory.UTILITY)
         
-        # 提取文档字符串
-        lines = content.split('\n')
-        for i, line in enumerate(lines):
-            if '"""' in line or "'''" in line:
-                # 找到文档字符串
-                doc_start = i
-                for j in range(i + 1, len(lines)):
-                    if '"""' in lines[j] or "'''" in lines[j]:
-                        doc_content = '\n'.join(lines[doc_start:j+1])
-                        metadata['description'] = doc_content.strip('"""').strip("'''").strip()
-                        break
-                break
+        return ToolCategory.UTILITY
+    
+    async def _register_tool(self, tool: MCPTool):
+        """注册工具"""
+        self.discovered_tools[tool.tool_id] = tool
         
-        # 提取版本信息
-        for line in lines:
-            if '__version__' in line or 'version' in line.lower():
-                if '=' in line:
-                    version_part = line.split('=')[1].strip().strip('"').strip("'")
-                    metadata['version'] = version_part
-                    break
+        # 更新统计
+        self.discovery_stats["unique_tools"] = len(self.discovered_tools)
         
-        # 提取作者信息
-        for line in lines:
-            if '__author__' in line or 'author' in line.lower():
-                if '=' in line:
-                    author_part = line.split('=')[1].strip().strip('"').strip("'")
-                    metadata['author'] = author_part
-                    break
+        logger.debug(f"注册工具: {tool.name} ({tool.tool_id})")
+    
+    async def get_discovered_tools(self, category: ToolCategory = None, 
+                                 status: ToolStatus = None,
+                                 limit: int = None) -> List[MCPTool]:
+        """获取发现的工具"""
+        tools = list(self.discovered_tools.values())
         
-        return metadata
+        # 过滤
+        if category:
+            tools = [tool for tool in tools if tool.category == category]
+        
+        if status:
+            tools = [tool for tool in tools if tool.status == status]
+        
+        # 排序（按发现时间倒序）
+        tools.sort(key=lambda t: t.metadata.get("discovered_at", ""), reverse=True)
+        
+        # 限制数量
+        if limit:
+            tools = tools[:limit]
+        
+        return tools
     
-    async def _periodic_scan(self) -> None:
-        """定期扫描"""
-        while self.is_running:
-            await asyncio.sleep(self.config.scan_interval)
-            if self.is_running:
-                await self.full_scan()
+    async def search_tools(self, query: str, limit: int = 20) -> List[MCPTool]:
+        """搜索工具"""
+        query = query.lower()
+        matching_tools = []
+        
+        for tool in self.discovered_tools.values():
+            # 计算相关性得分
+            score = 0.0
+            
+            # 名称匹配
+            if query in tool.name.lower():
+                score += 2.0
+            
+            # 描述匹配
+            if query in tool.description.lower():
+                score += 1.0
+            
+            # 标签匹配
+            for tag in tool.tags:
+                if query in tag.lower():
+                    score += 0.5
+            
+            # 能力匹配
+            for capability in tool.capabilities:
+                if query in capability.name.lower():
+                    score += 1.5
+            
+            if score > 0:
+                matching_tools.append((tool, score))
+        
+        # 按得分排序
+        matching_tools.sort(key=lambda x: x[1], reverse=True)
+        
+        return [tool for tool, score in matching_tools[:limit]]
     
-    def get_discovered_tools(self) -> Dict[str, MCPTool]:
-        """获取已发现的工具"""
-        return self.discovered_tools.copy()
-    
-    def get_tools_by_type(self, tool_type: str) -> List[MCPTool]:
-        """按类型获取工具"""
-        return [tool for tool in self.discovered_tools.values() if tool.type == tool_type]
-    
-    def get_tools_by_capability(self, capability: ToolCapability) -> List[MCPTool]:
-        """按能力获取工具"""
-        return [tool for tool in self.discovered_tools.values() if capability in tool.capabilities]
-    
-    def get_scan_statistics(self) -> Dict[str, Any]:
-        """获取扫描统计信息"""
+    async def get_discovery_statistics(self) -> Dict[str, Any]:
+        """获取发现统计信息"""
+        # 计算平均发现时间
+        completed_tasks = [
+            task for task in self.discovery_tasks.values() 
+            if task.status == DiscoveryStatus.COMPLETED and task.started_at and task.completed_at
+        ]
+        
+        if completed_tasks:
+            total_time = sum(
+                (task.completed_at - task.started_at).total_seconds() 
+                for task in completed_tasks
+            )
+            self.discovery_stats["discovery_time_avg"] = total_time / len(completed_tasks)
+        
+        # 分类统计
+        category_stats = {}
+        for tool in self.discovered_tools.values():
+            category = tool.category.value
+            category_stats[category] = category_stats.get(category, 0) + 1
+        
+        # 状态统计
+        status_stats = {}
+        for tool in self.discovered_tools.values():
+            status = tool.status.value
+            status_stats[status] = status_stats.get(status, 0) + 1
+        
+        # 源类型统计
+        source_stats = {}
+        for tool in self.discovered_tools.values():
+            source = tool.source_type
+            source_stats[source] = source_stats.get(source, 0) + 1
+        
         return {
-            'total_tools': len(self.discovered_tools),
-            'tools_by_type': {
-                tool_type: len(self.get_tools_by_type(tool_type))
-                for tool_type in set(tool.type for tool in self.discovered_tools.values())
-            },
-            'scan_history': self.scan_history[-10:],  # 最近10次扫描
-            'last_scan': self.scan_history[-1] if self.scan_history else None
+            "discovery_overview": self.discovery_stats,
+            "category_distribution": category_stats,
+            "status_distribution": status_stats,
+            "source_distribution": source_stats,
+            "total_tasks": len(self.discovery_tasks),
+            "active_tasks": len([
+                task for task in self.discovery_tasks.values() 
+                if task.status in [DiscoveryStatus.PENDING, DiscoveryStatus.SCANNING, DiscoveryStatus.ANALYZING]
+            ]),
+            "registries": len(self.registries)
         }
-
-
-# 工具发现引擎实例
-discovery_engine = None
-
-def get_discovery_engine() -> MCPZeroDiscoveryEngine:
-    """获取工具发现引擎实例"""
-    global discovery_engine
-    if discovery_engine is None:
-        config = DiscoveryConfig(
-            scan_paths=[
-                '/home/ubuntu/aicore0707/core/components',
-                '/home/ubuntu/aicore0707/core/agents',
-                '/usr/local/bin',
-                '/usr/bin'
-            ]
-        )
-        discovery_engine = MCPZeroDiscoveryEngine(config)
-    return discovery_engine
-
-
-if __name__ == "__main__":
-    # 测试工具发现引擎
-    async def test_discovery():
-        engine = get_discovery_engine()
-        await engine.start_discovery()
-        
-        # 等待扫描完成
-        await asyncio.sleep(2)
-        
-        # 打印统计信息
-        stats = engine.get_scan_statistics()
-        print(f"发现工具总数: {stats['total_tools']}")
-        print(f"工具类型分布: {stats['tools_by_type']}")
-        
-        # 打印部分工具
-        tools = list(engine.get_discovered_tools().values())[:5]
-        for tool in tools:
-            print(f"工具: {tool.name} ({tool.type}) - {tool.description}")
-        
-        await engine.stop_discovery()
     
-    asyncio.run(test_discovery())
+    async def export_discovered_tools(self, format: str = "json", 
+                                    output_path: str = None) -> str:
+        """导出发现的工具"""
+        if output_path is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = f"./discovered_tools_{timestamp}.{format}"
+        
+        tools_data = []
+        for tool in self.discovered_tools.values():
+            tool_dict = asdict(tool)
+            # 处理枚举类型
+            tool_dict["category"] = tool.category.value
+            tool_dict["status"] = tool.status.value
+            tools_data.append(tool_dict)
+        
+        if format == "json":
+            with open(output_path, 'w', encoding='utf-8') as f:
+                json.dump(tools_data, f, indent=2, ensure_ascii=False, default=str)
+        
+        elif format == "yaml":
+            with open(output_path, 'w', encoding='utf-8') as f:
+                yaml.dump(tools_data, f, default_flow_style=False, allow_unicode=True)
+        
+        elif format == "csv":
+            import csv
+            with open(output_path, 'w', newline='', encoding='utf-8') as f:
+                if tools_data:
+                    writer = csv.DictWriter(f, fieldnames=tools_data[0].keys())
+                    writer.writeheader()
+                    writer.writerows(tools_data)
+        
+        else:
+            raise ValueError(f"不支持的导出格式: {format}")
+        
+        logger.info(f"导出 {len(tools_data)} 个工具到 {output_path}")
+        return output_path
+
+# 工厂函数
+def get_mcp_zero_discovery_engine(config_path: str = "./mcp_zero_config.json") -> MCPZeroDiscoveryEngine:
+    """获取MCP-Zero发现引擎实例"""
+    return MCPZeroDiscoveryEngine(config_path)
+
+# 测试和演示
+if __name__ == "__main__":
+    async def test_discovery_engine():
+        """测试发现引擎"""
+        engine = get_mcp_zero_discovery_engine()
+        
+        # 开始发现
+        print("🔍 开始工具发现...")
+        task_ids = await engine.start_discovery()
+        
+        # 等待发现完成
+        await asyncio.sleep(5)
+        
+        # 获取发现的工具
+        tools = await engine.get_discovered_tools(limit=10)
+        print(f"📋 发现 {len(tools)} 个工具:")
+        
+        for tool in tools:
+            print(f"  - {tool.name} ({tool.category.value})")
+            print(f"    {tool.description[:100]}...")
+            print(f"    能力: {[cap.name for cap in tool.capabilities[:3]]}")
+            print()
+        
+        # 搜索测试
+        search_results = await engine.search_tools("file", limit=5)
+        print(f"🔍 搜索 'file' 相关工具 ({len(search_results)} 个):")
+        for tool in search_results:
+            print(f"  - {tool.name}")
+        
+        # 统计信息
+        stats = await engine.get_discovery_statistics()
+        print(f"📊 发现统计:")
+        print(f"  总发现数: {stats['discovery_overview']['total_discoveries']}")
+        print(f"  成功发现: {stats['discovery_overview']['successful_discoveries']}")
+        print(f"  发现工具数: {stats['discovery_overview']['total_tools_found']}")
+        print(f"  唯一工具数: {stats['discovery_overview']['unique_tools']}")
+        
+        # 导出工具
+        export_path = await engine.export_discovered_tools("json")
+        print(f"💾 工具数据已导出到: {export_path}")
+    
+    # 运行测试
+    asyncio.run(test_discovery_engine())
 

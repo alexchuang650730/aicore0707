@@ -1,0 +1,554 @@
+import { useState, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { 
+  Cloud, 
+  Server, 
+  Activity, 
+  Settings, 
+  Shield, 
+  Zap, 
+  Monitor, 
+  Users,
+  Database,
+  Network,
+  Bell,
+  Search,
+  Menu,
+  X,
+  ChevronRight,
+  TrendingUp,
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  Cpu,
+  HardDrive,
+  Wifi,
+  Bot,
+  MessageSquare,
+  Sparkles
+} from 'lucide-react'
+import { Button } from '@/components/ui/button.jsx'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card.jsx'
+import { Badge } from '@/components/ui/badge.jsx'
+import { Input } from '@/components/ui/input.jsx'
+import { Progress } from '@/components/ui/progress.jsx'
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert.jsx'
+import './App.css'
+
+// AG-UI增强的侧边栏组件
+const AGUISidebar = ({ isOpen, onToggle, activeTab, onTabChange }) => {
+  const menuItems = [
+    { id: 'dashboard', label: '智能仪表板', icon: Monitor, description: '系统概览和AI洞察' },
+    { id: 'environments', label: '环境管理', icon: Server, description: 'AI辅助环境配置' },
+    { id: 'deployments', label: '智能部署', icon: Cloud, description: '自动化部署管理' },
+    { id: 'monitoring', label: 'AI监控', icon: Activity, description: '智能告警和预测' },
+    { id: 'security', label: '安全防护', icon: Shield, description: 'AI安全分析' },
+    { id: 'performance', label: '性能优化', icon: Zap, description: 'AI性能调优' },
+    { id: 'users', label: '用户管理', icon: Users, description: '智能权限管理' },
+    { id: 'settings', label: '系统设置', icon: Settings, description: 'AI配置助手' }
+  ]
+
+  return (
+    <motion.div
+      initial={{ x: -300 }}
+      animate={{ x: isOpen ? 0 : -250 }}
+      transition={{ duration: 0.3, ease: "easeInOut" }}
+      className="fixed left-0 top-0 h-full w-72 bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 border-r border-gray-200 dark:border-gray-700 z-50 shadow-2xl backdrop-blur-sm"
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center space-x-3">
+            <div className="relative">
+              <Cloud className="h-8 w-8 text-blue-600" />
+              <Sparkles className="h-4 w-4 text-yellow-400 absolute -top-1 -right-1 animate-pulse" />
+            </div>
+            <div>
+              <span className="text-xl font-bold text-gray-900 dark:text-white">Cloud MCP</span>
+              <div className="text-xs text-gray-600 dark:text-gray-400 flex items-center gap-1">
+                <Bot className="h-3 w-3" />
+                AG-UI Powered
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onToggle}
+            className="lg:hidden"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+        
+        <nav className="space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon
+            return (
+              <motion.button
+                key={item.id}
+                whileHover={{ scale: 1.02, x: 4 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => onTabChange(item.id)}
+                className={`w-full flex flex-col items-start space-y-1 px-4 py-3 rounded-xl text-left transition-all duration-200 group ${
+                  activeTab === item.id
+                    ? 'bg-gradient-to-r from-blue-50 to-blue-100 dark:from-blue-900/50 dark:to-blue-800/50 text-blue-900 dark:text-blue-100 shadow-lg'
+                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 hover:shadow-md'
+                }`}
+              >
+                <div className="flex items-center space-x-3 w-full">
+                  <Icon className={`h-5 w-5 transition-colors ${
+                    activeTab === item.id ? 'text-blue-600' : 'text-gray-500 group-hover:text-blue-600'
+                  }`} />
+                  <span className="font-medium">{item.label}</span>
+                  {activeTab === item.id && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      animate={{ scale: 1 }}
+                      className="ml-auto"
+                    >
+                      <ChevronRight className="h-4 w-4 text-blue-600" />
+                    </motion.div>
+                  )}
+                </div>
+                <span className="text-xs text-gray-500 dark:text-gray-400 ml-8 group-hover:text-gray-700 dark:group-hover:text-gray-300">
+                  {item.description}
+                </span>
+              </motion.button>
+            )
+          })}
+        </nav>
+
+        {/* AI助手快捷入口 */}
+        <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-xl border border-blue-200 dark:border-blue-700">
+          <div className="flex items-center space-x-2 mb-2">
+            <Bot className="h-4 w-4 text-blue-600" />
+            <span className="text-sm font-medium text-gray-900 dark:text-white">AI助手</span>
+          </div>
+          <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
+            智能分析系统状态，提供优化建议
+          </p>
+          <Button size="sm" className="w-full bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300 dark:bg-blue-800 dark:hover:bg-blue-700 dark:text-blue-100">
+            <MessageSquare className="h-3 w-3 mr-1" />
+            开始对话
+          </Button>
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+// AG-UI增强的顶部导航栏
+const AGUITopBar = ({ onMenuToggle, onSearch }) => {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleSearch = (e) => {
+    setSearchQuery(e.target.value)
+    onSearch(e.target.value)
+  }
+
+  return (
+    <div className="h-16 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 flex items-center justify-between px-6 shadow-sm">
+      <div className="flex items-center space-x-4">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onMenuToggle}
+          className="lg:hidden"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
+        
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <Input
+            placeholder="AI智能搜索：环境、部署、服务..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="pl-10 w-96 bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600"
+          />
+          <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+            <Sparkles className="h-3 w-3 text-blue-500" />
+          </div>
+        </div>
+      </div>
+
+      <div className="flex items-center space-x-4">
+        <Button variant="ghost" size="sm" className="relative">
+          <Bell className="h-5 w-5" />
+          <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+            3
+          </span>
+        </Button>
+        
+        <div className="flex items-center space-x-3 px-3 py-1 rounded-lg bg-gray-100 dark:bg-gray-800">
+          <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center">
+            <span className="text-white text-sm font-medium">AI</span>
+          </div>
+          <div>
+            <span className="text-sm font-medium text-gray-900 dark:text-white">AI管理员</span>
+            <div className="text-xs text-gray-500 dark:text-gray-400">在线</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// AG-UI增强的仪表板组件
+const AGUIDashboard = () => {
+  const [stats, setStats] = useState({
+    totalEnvironments: 12,
+    activeDeployments: 8,
+    systemHealth: 95,
+    aiRecommendations: 5,
+    cpuUsage: 68,
+    memoryUsage: 72,
+    networkTraffic: 45,
+    aiOptimizations: 3
+  })
+
+  const statusCards = [
+    {
+      title: "环境总数",
+      value: stats.totalEnvironments,
+      change: "+2",
+      changeType: "positive",
+      icon: Server,
+      color: "text-blue-600",
+      aiInsight: "AI建议：可优化3个环境配置"
+    },
+    {
+      title: "智能部署",
+      value: stats.activeDeployments,
+      change: "+3",
+      changeType: "positive", 
+      icon: Cloud,
+      color: "text-green-600",
+      aiInsight: "AI预测：下次部署成功率98%"
+    },
+    {
+      title: "系统健康度",
+      value: `${stats.systemHealth}%`,
+      change: "+1%",
+      changeType: "positive",
+      icon: Activity,
+      color: "text-emerald-600",
+      aiInsight: "AI分析：系统运行状态优秀"
+    },
+    {
+      title: "AI优化建议",
+      value: stats.aiRecommendations,
+      change: "新增2条",
+      changeType: "neutral",
+      icon: Sparkles,
+      color: "text-purple-600",
+      aiInsight: "AI助手：发现性能优化机会"
+    }
+  ]
+
+  const systemMetrics = [
+    { 
+      label: "CPU 使用率", 
+      value: stats.cpuUsage, 
+      icon: Cpu, 
+      color: "bg-blue-500",
+      aiStatus: "正常",
+      aiTrend: "稳定"
+    },
+    { 
+      label: "内存使用率", 
+      value: stats.memoryUsage, 
+      icon: HardDrive, 
+      color: "bg-green-500",
+      aiStatus: "良好",
+      aiTrend: "优化中"
+    },
+    { 
+      label: "网络流量", 
+      value: stats.networkTraffic, 
+      icon: Wifi, 
+      color: "bg-purple-500",
+      aiStatus: "正常",
+      aiTrend: "平稳"
+    }
+  ]
+
+  return (
+    <div className="space-y-6">
+      {/* AI洞察横幅 */}
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="bg-gradient-to-r from-blue-50 via-purple-50 to-transparent dark:from-blue-900/20 dark:via-purple-900/20 p-4 rounded-xl border border-blue-200 dark:border-blue-700"
+      >
+        <div className="flex items-center space-x-3">
+          <div className="p-2 bg-blue-100 dark:bg-blue-800 rounded-lg">
+            <Bot className="h-5 w-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">AI智能洞察</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              系统运行良好，AI检测到3个优化机会，预计可提升15%性能
+            </p>
+          </div>
+          <Button variant="outline" size="sm" className="ml-auto">
+            查看详情
+          </Button>
+        </div>
+      </motion.div>
+
+      {/* 增强状态卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {statusCards.map((card, index) => {
+          const Icon = card.icon
+          return (
+            <motion.div
+              key={card.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+              whileHover={{ y: -4, shadow: "0 10px 25px rgba(0,0,0,0.1)" }}
+            >
+              <Card className="hover:shadow-xl transition-all duration-300 border-gray-200 dark:border-gray-700 bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium text-gray-600 dark:text-gray-400">
+                    {card.title}
+                  </CardTitle>
+                  <div className="relative">
+                    <Icon className={`h-4 w-4 ${card.color}`} />
+                    {card.icon === Sparkles && (
+                      <div className="absolute -top-1 -right-1 w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
+                    )}
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold mb-1 text-gray-900 dark:text-white">{card.value}</div>
+                  <p className={`text-xs mb-2 ${
+                    card.changeType === 'positive' ? 'text-green-600' : 
+                    card.changeType === 'negative' ? 'text-red-600' : 'text-gray-500'
+                  }`}>
+                    {card.change} 较上周
+                  </p>
+                  <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 px-2 py-1 rounded-md">
+                    {card.aiInsight}
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* AI增强的系统指标 */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+                  <Activity className="h-5 w-5 text-blue-600" />
+                  AI系统性能监控
+                </CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">实时AI分析的系统资源使用情况</CardDescription>
+              </div>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
+                AI监控中
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {systemMetrics.map((metric) => {
+              const Icon = metric.icon
+              return (
+                <div key={metric.label} className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-2">
+                      <Icon className="h-4 w-4 text-gray-500 dark:text-gray-400" />
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{metric.label}</span>
+                      <Badge variant="secondary" className="text-xs">
+                        {metric.aiStatus}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{metric.value}%</span>
+                      <span className="text-xs text-blue-600">{metric.aiTrend}</span>
+                    </div>
+                  </div>
+                  <div className="relative">
+                    <Progress value={metric.value} className="h-2" />
+                    <div className="absolute top-0 right-0 w-1 h-2 bg-blue-500 rounded-full animate-pulse" />
+                  </div>
+                </div>
+              )
+            })}
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+                  <Clock className="h-5 w-5 text-blue-600" />
+                  AI活动分析
+                </CardTitle>
+                <CardDescription className="text-gray-600 dark:text-gray-400">AI智能分析的系统活动记录</CardDescription>
+              </div>
+              <Button variant="ghost" size="sm">
+                <Bot className="h-4 w-4 mr-1" />
+                AI分析
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {[
+                { action: "智能部署完成", target: "生产环境", time: "2分钟前", status: "success", aiScore: 98 },
+                { action: "AI环境优化", target: "测试环境", time: "15分钟前", status: "success", aiScore: 95 },
+                { action: "安全扫描", target: "开发环境", time: "1小时前", status: "warning", aiScore: 87 },
+                { action: "AI备份优化", target: "数据库", time: "2小时前", status: "success", aiScore: 92 }
+              ].map((activity, index) => (
+                <motion.div 
+                  key={index} 
+                  className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                  whileHover={{ x: 4 }}
+                >
+                  <div className={`w-2 h-2 rounded-full ${
+                    activity.status === 'success' ? 'bg-green-500' :
+                    activity.status === 'warning' ? 'bg-yellow-500' : 'bg-red-500'
+                  }`} />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-white">{activity.action}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400">{activity.target}</p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-xs text-gray-500 dark:text-gray-400">{activity.time}</span>
+                    <div className="text-xs text-blue-600">AI: {activity.aiScore}%</div>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* AI建议和告警 */}
+      <div className="space-y-4">
+        <Alert className="border-blue-200 bg-blue-50 dark:border-blue-700 dark:bg-blue-900/20">
+          <Sparkles className="h-4 w-4 text-blue-600" />
+          <AlertTitle className="text-blue-800 dark:text-blue-200">AI智能建议</AlertTitle>
+          <AlertDescription className="text-blue-700 dark:text-blue-300">
+            检测到开发环境CPU使用率较高，AI建议调整资源配置以优化性能。
+            <Button variant="link" className="p-0 h-auto text-blue-600 ml-2">
+              应用AI优化方案
+            </Button>
+          </AlertDescription>
+        </Alert>
+      </div>
+    </div>
+  )
+}
+
+// 主应用组件
+function App() {
+  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [activeTab, setActiveTab] = useState('dashboard')
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab)
+  }
+
+  const handleSearch = (query) => {
+    setSearchQuery(query)
+  }
+
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'dashboard':
+        return <AGUIDashboard />
+      case 'environments':
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                  <Server className="h-6 w-6 text-blue-600" />
+                  AI环境管理
+                </h2>
+                <p className="text-gray-600 dark:text-gray-400">智能化环境配置和管理</p>
+              </div>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Cloud className="h-4 w-4 mr-2" />
+                AI创建环境
+              </Button>
+            </div>
+            <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Bot className="h-5 w-5 text-blue-600" />
+                  <span className="font-medium text-gray-900 dark:text-white">AI环境分析</span>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">AI正在分析环境配置，智能优化建议即将生成...</p>
+              </CardContent>
+            </Card>
+          </div>
+        )
+      default:
+        return (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+                <Bot className="h-6 w-6 text-blue-600" />
+                AI功能开发中
+              </h2>
+            </div>
+            <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+              <CardContent className="p-6">
+                <div className="flex items-center space-x-3 mb-4">
+                  <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
+                  <span className="font-medium text-gray-900 dark:text-white">AI增强功能</span>
+                </div>
+                <p className="text-gray-600 dark:text-gray-400">该模块正在集成AG-UI协议和AI能力，敬请期待...</p>
+              </CardContent>
+            </Card>
+          </div>
+        )
+    }
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <AGUISidebar 
+        isOpen={sidebarOpen} 
+        onToggle={() => setSidebarOpen(!sidebarOpen)}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+      />
+      
+      <div className={`transition-all duration-300 ${sidebarOpen ? 'lg:ml-72' : 'ml-0'}`}>
+        <AGUITopBar 
+          onMenuToggle={() => setSidebarOpen(!sidebarOpen)}
+          onSearch={handleSearch}
+        />
+        
+        <main className="p-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.2 }}
+            >
+              {renderContent()}
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+    </div>
+  )
+}
+
+export default App
+

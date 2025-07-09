@@ -61,10 +61,10 @@ class ClaudEditorSimpleUI:
     def setup_static_files(self):
         """设置静态文件服务"""
         # 确保静态文件目录存在
-        if os.path.exists("static"):
-            self.app.mount("/static", StaticFiles(directory="static"), name="static")
-        if os.path.exists("templates"):
-            self.templates = Jinja2Templates(directory="templates")
+        if os.path.exists("claudeditor/static"):
+            self.app.mount("/static", StaticFiles(directory="claudeditor/static"), name="static")
+        if os.path.exists("claudeditor/templates"):
+            self.templates = Jinja2Templates(directory="claudeditor/templates")
         else:
             self.templates = None
     

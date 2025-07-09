@@ -90,11 +90,11 @@ class ClaudEditorMainUI:
     def setup_static_files(self):
         """设置静态文件服务"""
         # 创建静态文件目录
-        os.makedirs("static", exist_ok=True)
-        os.makedirs("templates", exist_ok=True)
+        os.makedirs("claudeditor/static", exist_ok=True)
+        os.makedirs("claudeditor/templates", exist_ok=True)
         
-        self.app.mount("/static", StaticFiles(directory="static"), name="static")
-        self.templates = Jinja2Templates(directory="templates")
+        self.app.mount("/static", StaticFiles(directory="claudeditor/static"), name="static")
+        self.templates = Jinja2Templates(directory="claudeditor/templates")
     
     def setup_routes(self):
         """设置路由"""

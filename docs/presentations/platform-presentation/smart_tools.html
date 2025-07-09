@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智能工具生态</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: #ffffff;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        
+        .page-title {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 10px;
+        }
+        
+        .content-text {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 20px;
+            color: #374151;
+            line-height: 1.6;
+        }
+        
+        .tool-category {
+            background: linear-gradient(135deg, #1e3a8a, #06b6d4);
+            color: white;
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            font-weight: bold;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .category-icon {
+            font-size: 22px;
+            margin-right: 12px;
+            color: #f97316;
+        }
+        
+        .tool-item {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-left: 3px solid #06b6d4;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        
+        .tool-icon {
+            font-size: 16px;
+            color: #1e3a8a;
+            margin-right: 12px;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .tool-name {
+            font-weight: bold;
+            color: #374151;
+            margin-right: 8px;
+        }
+        
+        .tool-desc {
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">
+            <i class="fas fa-tools mr-3"></i>智能工具生态
+        </h1>
+        
+        <div class="grid grid-cols-2 gap-10 h-full">
+            <!-- 左侧工具分类 -->
+            <div class="flex flex-col justify-evenly">
+                <div class="content-text mb-4">
+                    <div class="text-2xl font-bold text-gray-800 mb-2">Zen MCP工具生态</div>
+                    <div class="text-gray-600 mb-4">
+                        14种专业开发工具的智能发现和协作
+                    </div>
+                </div>
+                
+                <div class="tool-category">
+                    <i class="fas fa-code category-icon"></i>
+                    核心开发工具 (5种)
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="tool-item">
+                        <i class="fas fa-search tool-icon"></i>
+                        <span class="tool-name">代码分析器</span>
+                    </div>
+                    <div class="tool-item">
+                        <i class="fas fa-magic tool-icon"></i>
+                        <span class="tool-name">代码生成器</span>
+                    </div>
+                    <div class="tool-item">
+                        <i class="fas fa-bug tool-icon"></i>
+                        <span class="tool-name">调试助手</span>
+                    </div>
+                    <div class="tool-item">
+                        <i class="fas fa-sync tool-icon"></i>
+                        <span class="tool-name">重构工具</span>
+                    </div>
+                </div>
+                
+                <div class="tool-category">
+                    <i class="fas fa-tachometer-alt category-icon"></i>
+                    性能优化工具 (3种)
+                </div>
+                <div class="grid grid-cols-2 gap-2 mb-3">
+                    <div class="tool-item">
+                        <i class="fas fa-chart-line tool-icon"></i>
+                        <span class="tool-name">性能分析器</span>
+                    </div>
+                    <div class="tool-item">
+                        <i class="fas fa-bolt tool-icon"></i>
+                        <span class="tool-name">优化引擎</span>
+                    </div>
+                    <div class="tool-item">
+                        <i class="fas fa-stopwatch tool-icon"></i>
+                        <span class="tool-name">基准测试</span>
+                    </div>
+                </div>
+                
+                <div class="tool-category">
+                    <i class="fas fa-shield-alt category-icon"></i>
+                    质量保证工具 (3种)
+                </div>
+                <div class="grid grid-cols-2 gap-2">
+                    <div class="tool-item">
+                        <i class="fas fa-check-circle tool-icon"></i>
+                        <span class="tool-name">代码检查器</span>
+                    </div>
+                    <div class="tool-item">
+                        <i class="fas fa-file-alt tool-icon"></i>
+                        <span class="tool-name">文档生成器</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧工具发现和协作 -->
+            <div class="flex flex-col justify-evenly">
+                <div class="content-text mb-4">
+                    <div class="text-2xl font-bold text-gray-800 mb-2">智能工具发现与协作</div>
+                    <div class="text-gray-600 mb-4">
+                        MCP-Zero Smart Engine实现工具的自动发现和智能选择
+                    </div>
+                </div>
+                
+                <div style="height: 250px;">
+                    <canvas id="toolUsageChart"></canvas>
+                </div>
+                
+                <div class="mt-4">
+                    <div class="text-xl font-bold text-gray-800 mb-2">工具协作网络</div>
+                    <div class="bg-gray-50 p-3 rounded-lg">
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="mb-2">
+                                <span class="font-bold text-1e3a8a">智能工具路由：</span>
+                                <span class="text-gray-600">自动选择最适合的工具</span>
+                            </div>
+                            <div class="mb-2">
+                                <span class="font-bold text-1e3a8a">工作流编排：</span>
+                                <span class="text-gray-600">创建多工具协作流程</span>
+                            </div>
+                            <div>
+                                <span class="font-bold text-1e3a8a">工具协作网络：</span>
+                                <span class="text-gray-600">工具间的知识共享</span>
+                            </div>
+                            <div>
+                                <span class="font-bold text-1e3a8a">性能优化引擎：</span>
+                                <span class="text-gray-600">自动优化工具性能</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-4 flex justify-evenly">
+                    <div class="bg-blue-50 p-3 rounded-lg border-l-4 border-f97316">
+                        <div class="text-xl font-bold text-1e3a8a mb-1">85%+</div>
+                        <div class="text-gray-600">工具选择成功率</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg border-l-4 border-f97316">
+                        <div class="text-xl font-bold text-1e3a8a mb-1">90%+</div>
+                        <div class="text-gray-600">工具发现时间节省</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 工具使用分布图
+        const ctx = document.getElementById('toolUsageChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['代码分析', '代码生成', '调试', '重构', '测试', '优化', '文档'],
+                datasets: [{
+                    label: '工具使用频率',
+                    data: [85, 90, 75, 65, 70, 60, 55],
+                    backgroundColor: 'rgba(6, 182, 212, 0.2)',
+                    borderColor: '#06b6d4',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#1e3a8a',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#f97316',
+                    pointHoverBorderColor: '#fff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        grid: {
+                            color: 'rgba(0, 0, 0, 0.1)'
+                        },
+                        pointLabels: {
+                            font: {
+                                size: 14
+                            }
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '工具使用分布',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#1e3a8a'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

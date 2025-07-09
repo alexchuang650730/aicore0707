@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zen MCP工具生态</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .tool-category {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .tool-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+        }
+        .tool-icon {
+            font-size: 18px;
+            margin-right: 12px;
+            width: 25px;
+            text-align: center;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">Zen MCP工具生态</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div>
+                <p class="content-text mb-4">
+                    Zen MCP工具生态是一个包含14种专业开发工具的完整生态系统，
+                    覆盖核心开发、性能优化、质量保证和部署运维四大领域。
+                </p>
+                
+                <div class="tool-category">
+                    <h2 class="section-title">
+                        <i class="fas fa-code mr-2" style="color: #60a5fa;"></i>
+                        核心开发工具 (5种)
+                    </h2>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div class="tool-item">
+                            <i class="fas fa-search tool-icon" style="color: #60a5fa;"></i>
+                            <span class="content-text">代码分析器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-magic tool-icon" style="color: #60a5fa;"></i>
+                            <span class="content-text">代码生成器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-bug tool-icon" style="color: #60a5fa;"></i>
+                            <span class="content-text">调试工具</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-sync tool-icon" style="color: #60a5fa;"></i>
+                            <span class="content-text">重构工具</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-vial tool-icon" style="color: #60a5fa;"></i>
+                            <span class="content-text">测试生成器</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="tool-category">
+                        <h2 class="section-title">
+                            <i class="fas fa-bolt mr-2" style="color: #34d399;"></i>
+                            性能优化工具 (3种)
+                        </h2>
+                        <div class="tool-item">
+                            <i class="fas fa-tachometer-alt tool-icon" style="color: #34d399;"></i>
+                            <span class="content-text">性能分析器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-rocket tool-icon" style="color: #34d399;"></i>
+                            <span class="content-text">代码优化器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-chart-line tool-icon" style="color: #34d399;"></i>
+                            <span class="content-text">基准测试器</span>
+                        </div>
+                    </div>
+                    
+                    <div class="tool-category">
+                        <h2 class="section-title">
+                            <i class="fas fa-check-circle mr-2" style="color: #fbbf24;"></i>
+                            质量保证工具 (3种)
+                        </h2>
+                        <div class="tool-item">
+                            <i class="fas fa-clipboard-check tool-icon" style="color: #fbbf24;"></i>
+                            <span class="content-text">代码检查器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-align-left tool-icon" style="color: #fbbf24;"></i>
+                            <span class="content-text">代码格式化器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-book tool-icon" style="color: #fbbf24;"></i>
+                            <span class="content-text">文档生成器</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="tool-category mt-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-server mr-2" style="color: #f87171;"></i>
+                        部署运维工具 (3种)
+                    </h2>
+                    <div class="grid grid-cols-3 gap-2">
+                        <div class="tool-item">
+                            <i class="fas fa-upload tool-icon" style="color: #f87171;"></i>
+                            <span class="content-text">部署管理器</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-chart-bar tool-icon" style="color: #f87171;"></i>
+                            <span class="content-text">监控工具</span>
+                        </div>
+                        <div class="tool-item">
+                            <i class="fas fa-shield-alt tool-icon" style="color: #f87171;"></i>
+                            <span class="content-text">安全扫描器</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- 工具使用频率图表 -->
+                <div class="chart-container">
+                    <h2 class="section-title">工具使用频率</h2>
+                    <div style="height: 300px;">
+                        <canvas id="toolUsageChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 工具协作网络图表 -->
+                <div class="chart-container">
+                    <h2 class="section-title">工具协作效率提升</h2>
+                    <div style="height: 250px;">
+                        <canvas id="collaborationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 工具使用频率图表
+        const usageCtx = document.getElementById('toolUsageChart').getContext('2d');
+        const toolUsageChart = new Chart(usageCtx, {
+            type: 'bar',
+            data: {
+                labels: ['代码生成器', '代码分析器', '调试工具', '性能优化器', '部署管理器', '测试生成器'],
+                datasets: [{
+                    label: '每日平均使用次数',
+                    data: [42, 38, 35, 28, 25, 22],
+                    backgroundColor: [
+                        '#60a5fa',
+                        '#34d399',
+                        '#fbbf24',
+                        '#f87171',
+                        '#a78bfa',
+                        '#60a5fa'
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // 工具协作效率提升图表
+        const collabCtx = document.getElementById('collaborationChart').getContext('2d');
+        const collaborationChart = new Chart(collabCtx, {
+            type: 'line',
+            data: {
+                labels: ['1个工具', '2个工具', '3个工具', '5个工具', '8个工具', '14个工具'],
+                datasets: [{
+                    label: '效率提升百分比',
+                    data: [10, 25, 40, 55, 65, 85],
+                    fill: true,
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: '#6366f1',
+                    tension: 0.4,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#6366f1',
+                    pointRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#ffffff',
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    },
+                    x: {
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

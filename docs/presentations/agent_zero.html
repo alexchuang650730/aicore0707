@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agent Zero有机智能体</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .highlight-box {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .feature-icon {
+            font-size: 18px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">Agent Zero有机智能体</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div class="space-y-4">
+                <div class="highlight-box">
+                    <h2 class="section-title">
+                        <i class="fas fa-robot mr-3"></i>
+                        有机智能体架构
+                    </h2>
+                    <p class="content-text mb-3">
+                        Agent Zero是一个具有自学习能力的有机智能体网络，由5个专业智能体组成，能够持续进化和改进。
+                    </p>
+                    <div class="feature-item">
+                        <i class="fas fa-code feature-icon"></i>
+                        <span class="content-text">CodeAnalyzerAgent - 代码分析智能体</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-magic feature-icon"></i>
+                        <span class="content-text">CodeGeneratorAgent - 代码生成智能体</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-bug feature-icon"></i>
+                        <span class="content-text">DebuggerAgent - 调试智能体</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-bolt feature-icon"></i>
+                        <span class="content-text">OptimizerAgent - 优化智能体</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-users feature-icon"></i>
+                        <span class="content-text">CollaboratorAgent - 协作智能体</span>
+                    </div>
+                </div>
+
+                <div class="highlight-box">
+                    <h2 class="section-title">
+                        <i class="fas fa-brain mr-3"></i>
+                        自学习能力
+                    </h2>
+                    <div class="feature-item">
+                        <i class="fas fa-sync feature-icon"></i>
+                        <span class="content-text">5种学习策略 - 强化、模仿、探索、协作、自适应</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-database feature-icon"></i>
+                        <span class="content-text">经验缓冲区 - 1000个经验的循环缓冲</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-book feature-icon"></i>
+                        <span class="content-text">知识库构建 - 成功模式和最佳实践积累</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧图表 -->
+            <div class="space-y-4">
+                <!-- 智能体协作网络图 -->
+                <div class="chart-container">
+                    <h2 class="section-title">
+                        <i class="fas fa-network-wired mr-3"></i>
+                        智能体协作网络
+                    </h2>
+                    <div style="height: 250px;">
+                        <canvas id="agentNetworkChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 性能提升图表 -->
+                <div class="chart-container">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-line mr-3"></i>
+                        性能提升指标
+                    </h2>
+                    <div style="height: 200px;">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 智能体协作网络图
+        const networkCtx = document.getElementById('agentNetworkChart').getContext('2d');
+        
+        // 创建性能提升图表
+        const perfCtx = document.getElementById('performanceChart').getContext('2d');
+        const performanceChart = new Chart(perfCtx, {
+            type: 'bar',
+            data: {
+                labels: ['代码生成速度', '错误检测率', '优化效率', '协作效率', '整体性能'],
+                datasets: [{
+                    label: '性能提升百分比',
+                    data: [42, 65, 38, 55, 49.11],
+                    backgroundColor: [
+                        'rgba(96, 165, 250, 0.7)',
+                        'rgba(52, 211, 153, 0.7)',
+                        'rgba(251, 191, 36, 0.7)',
+                        'rgba(248, 113, 113, 0.7)',
+                        'rgba(167, 139, 250, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(96, 165, 250, 1)',
+                        'rgba(52, 211, 153, 1)',
+                        'rgba(251, 191, 36, 1)',
+                        'rgba(248, 113, 113, 1)',
+                        'rgba(167, 139, 250, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `提升: ${context.raw}%`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 70,
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 使用Chart.js创建智能体网络图（使用散点图模拟网络图）
+        const networkChart = new Chart(networkCtx, {
+            type: 'scatter',
+            data: {
+                datasets: [
+                    {
+                        label: 'CodeAnalyzer',
+                        data: [{x: 0.3, y: 0.7, r: 15}],
+                        backgroundColor: 'rgba(96, 165, 250, 0.7)',
+                        borderColor: 'rgba(96, 165, 250, 1)',
+                        pointRadius: 15,
+                        pointHoverRadius: 18
+                    },
+                    {
+                        label: 'CodeGenerator',
+                        data: [{x: 0.7, y: 0.7, r: 15}],
+                        backgroundColor: 'rgba(52, 211, 153, 0.7)',
+                        borderColor: 'rgba(52, 211, 153, 1)',
+                        pointRadius: 15,
+                        pointHoverRadius: 18
+                    },
+                    {
+                        label: 'Debugger',
+                        data: [{x: 0.5, y: 0.3, r: 15}],
+                        backgroundColor: 'rgba(251, 191, 36, 0.7)',
+                        borderColor: 'rgba(251, 191, 36, 1)',
+                        pointRadius: 15,
+                        pointHoverRadius: 18
+                    },
+                    {
+                        label: 'Optimizer',
+                        data: [{x: 0.2, y: 0.4, r: 15}],
+                        backgroundColor: 'rgba(248, 113, 113, 0.7)',
+                        borderColor: 'rgba(248, 113, 113, 1)',
+                        pointRadius: 15,
+                        pointHoverRadius: 18
+                    },
+                    {
+                        label: 'Collaborator',
+                        data: [{x: 0.8, y: 0.4, r: 15}],
+                        backgroundColor: 'rgba(167, 139, 250, 0.7)',
+                        borderColor: 'rgba(167, 139, 250, 1)',
+                        pointRadius: 15,
+                        pointHoverRadius: 18
+                    },
+                    // 连接线（使用极小的点和大的半径来模拟线）
+                    {
+                        label: 'Connections',
+                        data: [
+                            {x: 0.4, y: 0.7, r: 1}, {x: 0.6, y: 0.7, r: 1}, // 分析器-生成器
+                            {x: 0.3, y: 0.55, r: 1}, {x: 0.5, y: 0.3, r: 1}, // 分析器-调试器
+                            {x: 0.2, y: 0.55, r: 1}, {x: 0.2, y: 0.4, r: 1}, // 分析器-优化器
+                            {x: 0.6, y: 0.5, r: 1}, {x: 0.5, y: 0.3, r: 1}, // 生成器-调试器
+                            {x: 0.7, y: 0.55, r: 1}, {x: 0.8, y: 0.4, r: 1}, // 生成器-协作器
+                            {x: 0.35, y: 0.3, r: 1}, {x: 0.2, y: 0.4, r: 1}, // 调试器-优化器
+                            {x: 0.65, y: 0.3, r: 1}, {x: 0.8, y: 0.4, r: 1}, // 调试器-协作器
+                            {x: 0.5, y: 0.4, r: 1}, {x: 0.5, y: 0.4, r: 1}  // 优化器-协作器
+                        ],
+                        backgroundColor: 'rgba(255, 255, 255, 0.5)',
+                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        pointRadius: 2,
+                        showLine: true,
+                        tension: 0.4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: {
+                            color: 'rgba(255, 255, 255, 0.7)',
+                            boxWidth: 12,
+                            padding: 10
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        display: false,
+                        min: 0,
+                        max: 1
+                    },
+                    x: {
+                        display: false,
+                        min: 0,
+                        max: 1
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

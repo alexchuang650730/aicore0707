@@ -32,7 +32,6 @@ def update_imports_in_file(file_path):
             r'import PowerAutomation\.command_master': 'import core.command',
             # r'from PowerAutomation\.simple_smart_tool_engine': 'from core.tools.smart_engine',  # 已移除
             # r'import PowerAutomation\.simple_smart_tool_engine': 'import core.tools.smart_engine',  # 已移除
-            r'from PowerAutomation\.core': 'from core.components.powerautomation_mcp_legacy',
             r'import PowerAutomation\.core': 'import core.powerautomation_legacy',
             r'from PowerAutomation': 'from core',
             r'import PowerAutomation': 'import core',

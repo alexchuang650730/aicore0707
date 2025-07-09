@@ -86,7 +86,6 @@ class P0TestRunner:
             """测试系统启动"""
             try:
                 # 测试导入核心模块
-                from core.components.powerautomation_mcp_main import PowerAutomationMain
                 from core.event_bus import EventBus
                 from core.config import Config
                 

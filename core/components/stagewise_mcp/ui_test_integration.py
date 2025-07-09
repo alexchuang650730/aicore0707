@@ -37,10 +37,12 @@ class UITestIntegration:
     def _initialize_ui_test_registry(self):
         """初始化UI测试注册器"""
         try:
-            # 动态导入UI测试注册器
-            from test.ui_test_registry import get_ui_test_registry
-            self.ui_test_registry = get_ui_test_registry()
-            logger.info("UI测试注册器初始化成功")
+            # 动态导入UI测试注册器 - 已迁移到test_mcp
+            # from test.ui_test_registry import get_ui_test_registry
+            # TODO: 更新为使用 core.components.test_mcp 的对应功能
+            # self.ui_test_registry = get_ui_test_registry()
+            self.ui_test_registry = None  # 临时禁用，等待test_mcp集成
+            logger.info("UI测试注册器已禁用，等待test_mcp集成")
         except ImportError as e:
             logger.error(f"无法导入UI测试注册器: {str(e)}")
             self.ui_test_registry = None

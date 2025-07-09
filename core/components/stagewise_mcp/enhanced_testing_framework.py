@@ -262,7 +262,7 @@ class EnhancedStagewiseTestingFramework:
             "trae_agent_mcp",
             "web_ui_mcp",
             "zen_mcp",
-            "enterprise_management",
+            # "enterprise_management",  # 已移动到showcase/
             "local_adapter_mcp",
             "mcp_zero_smart_engine"
         ]

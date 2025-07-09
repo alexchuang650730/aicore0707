@@ -274,7 +274,7 @@ class P0TestRunner:
             ("trae_agent_mcp", "Trae智能代理"),
             ("mcp_zero_smart_engine", "MCP零智能引擎"),
             ("ai_ecosystem_integration", "AI生态集成"),
-            ("enterprise_management", "企业管理"),
+            # ("enterprise_management", "企业管理"),  # 已移动到showcase/
             ("zen_mcp", "Zen组件")
         ]
         

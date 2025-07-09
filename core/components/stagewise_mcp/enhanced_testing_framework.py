@@ -260,7 +260,7 @@ class EnhancedStagewiseTestingFramework:
             "ag_ui_mcp",
             "memoryos_mcp", 
             "trae_agent_mcp",
-            "web_ui_mcp",
+            
             "zen_mcp",
             # "enterprise_management",  # 已移动到showcase/
             "local_adapter_mcp",

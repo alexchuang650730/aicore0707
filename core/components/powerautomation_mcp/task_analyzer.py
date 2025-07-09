@@ -619,7 +619,7 @@ class TaskAnalyzer:
             mcps.add("trae_agent_mcp")
         
         if domain in [TaskDomain.FRONTEND, TaskDomain.WEB]:
-            mcps.add("web_ui_mcp")
+            mcps.add()
         
         if domain == TaskDomain.DATA_SCIENCE:
             mcps.add("memoryos_mcp")

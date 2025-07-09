@@ -566,7 +566,7 @@ class PerformanceMonitor:
         # 这里应该从MCP协调器获取实际指标
         # 目前使用模拟数据
         mcp_names = ["local_adapter_mcp", "trae_agent_mcp", "stagewise_mcp", 
-                    "memoryos_mcp", "web_ui_mcp"]
+                    "memoryos_mcp", ]
         
         for mcp_name in mcp_names:
             # 模拟MCP指标

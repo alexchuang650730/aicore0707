@@ -18,14 +18,12 @@ __author__ = "PowerAutomation Team"
 
 from .main_controller import MainController
 from .task_analyzer import TaskAnalyzer
-from .intelligent_router import IntelligentRouter
 from .result_integrator import ResultIntegrator
 from .performance_monitor import PerformanceMonitor
 
 __all__ = [
     "MainController",
     "TaskAnalyzer", 
-    "IntelligentRouter",
     "ResultIntegrator",
     "PerformanceMonitor"
 ]

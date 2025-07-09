@@ -21,12 +21,12 @@ from core.event_bus import get_event_bus
 from core.task_manager import get_task_manager
 
 # 导入CommandMaster
-from core.command.command_executor import get_command_executor
-from core.command.commands import load_all_commands
+from core.components.command_mcp.command_master.command_executor import get_command_executor
+from core.components.command_mcp.command_master.commands import load_all_commands
 
 # 导入Claude SDK
-from core.integrations.claude_sdk.conversation_manager import get_conversation_manager
-from core.integrations.claude_sdk.message_processor import get_message_processor
+from core.components.claude_integration_mcp.claude_sdk.conversation_manager import get_conversation_manager
+from core.components.claude_integration_mcp.claude_sdk.message_processor import get_message_processor
 
 
 # 设置日志

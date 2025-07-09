@@ -38,8 +38,8 @@ from core.components.stagewise_mcp.stagewise_service import StagewiseService
 from core.components.mcp_zero_smart_engine.discovery.mcp_zero_discovery_engine import MCPZeroDiscoveryEngine
 from core.components.memoryos_mcp.memory_engine import MemoryOSEngine
 from core.components.trae_agent_mcp.trae_agent_coordinator import TraeAgentCoordinator
-from core.integrations.claude_sdk.enhanced_conversation_manager import EnhancedConversationManager
-from core.integrations.claude_sdk.multi_model_coordinator import MultiModelCoordinator
+from core.components.claude_integration_mcp.claude_sdk.enhanced_conversation_manager import EnhancedConversationManager
+from core.components.claude_integration_mcp.claude_sdk.multi_model_coordinator import MultiModelCoordinator
 
 
 class TestStage(Enum):

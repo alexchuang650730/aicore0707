@@ -187,8 +187,8 @@ class P0TestRunner:
             """测试Claude SDK"""
             try:
                 # 测试Claude SDK模块导入
-                from core.integrations.claude_sdk import claude_client
-                from core.integrations.claude_sdk import claude_sdk_mcp_v2
+                from core.components.claude_integration_mcp.claude_sdk import claude_client
+                from core.components.claude_integration_mcp.claude_sdk import claude_sdk_mcp_v2
                 
                 logger.info("✅ Claude SDK模块导入成功")
                 

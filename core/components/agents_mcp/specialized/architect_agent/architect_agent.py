@@ -13,7 +13,7 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
 
-from core.agents.shared.agent_base import AgentBase
+from core.components.agents_mcp.shared.agent_base import AgentBase
 
 class ArchitectAgent(AgentBase):
     """架构师智能体"""

@@ -17,7 +17,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 
 from core.components.record_as_test_mcp import RecordAsTestService
 from core.components.stagewise_mcp.stagewise_service import StagewiseService
-from core.integrations.claude_sdk.claude_client import ClaudeClient
+from core.components.claude_integration_mcp.claude_sdk.claude_client import ClaudeClient
 from claudeditor_ui_main import ClaudEditorUI
 
 # 配置日志

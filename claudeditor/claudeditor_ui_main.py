@@ -39,8 +39,8 @@ from core.components.ai_ecosystem_integration.claudeditor.claudeditor_deep_integ
 from core.components.stagewise_mcp.stagewise_service import StagewiseService
 
 # 导入Claude SDK
-from core.integrations.claude_sdk.claude_client import ClaudeClient
-from core.integrations.claude_sdk.conversation_manager import ConversationManager
+from core.components.claude_integration_mcp.claude_sdk.claude_client import ClaudeClient
+from core.components.claude_integration_mcp.claude_sdk.conversation_manager import ConversationManager
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)

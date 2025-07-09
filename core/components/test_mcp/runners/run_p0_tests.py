@@ -86,7 +86,7 @@ class P0TestRunner:
             """测试系统启动"""
             try:
                 # 测试导入核心模块
-                from core.powerautomation_main import PowerAutomationMain
+                from core.components.powerautomation_mcp_main import PowerAutomationMain
                 from core.event_bus import EventBus
                 from core.config import Config
                 
@@ -165,8 +165,8 @@ class P0TestRunner:
         async def test_claude_sdk():
             """测试Claude SDK"""
             try:
-                from core.integrations.claude_sdk.claude_client import ClaudeClient
-                from core.integrations.claude_sdk.claude_sdk_mcp_v2 import ClaudeSDKMCP
+                from core.components.claude_integration_mcp.claude_sdk.claude_client import ClaudeClient
+                from core.components.claude_integration_mcp.claude_sdk.claude_sdk_mcp_v2 import ClaudeSDKMCP
                 
                 # 测试Claude客户端
                 client = ClaudeClient()

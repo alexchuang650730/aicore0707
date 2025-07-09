@@ -33,7 +33,7 @@ from core.components.trae_agent_mcp.trae_agent_coordinator import TraeAgentCoord
 from core.components.ai_ecosystem_integration.claudeditor.claudeditor_deep_integration import ClaudEditorDeepIntegration
 
 # 导入Claude SDK
-from core.integrations.claude_sdk import ClaudeClient, ConversationManager
+from core.components.claude_integration_mcp.claude_sdk import ClaudeClient, ConversationManager
 
 # 设置日志
 logging.basicConfig(level=logging.INFO)

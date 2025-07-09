@@ -21,11 +21,11 @@ def test_imports():
         'core.parallel_executor',
         
         # 智能体系统
-        'core.agents.agent_coordinator',
+        'core.components.agents_mcp.agent_coordinator',
         
         # MCP组件
         'core.mcp_coordinator.legacy',
-        'core.routing.smart_router',
+        'core.components.routing_mcp.smart_router',
         'core.workflow',
         
         # 集成组件
@@ -36,7 +36,7 @@ def test_imports():
         # 新增组件
         'core.components.memoryos_mcp.memory_engine',
         'core.components.trae_agent_mcp.trae_agent_engine',
-        'core.routing.intelligent_task_router',
+        'core.components.routing_mcp.intelligent_task_router',
     ]
     
     success_count = 0

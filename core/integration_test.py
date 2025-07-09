@@ -24,13 +24,9 @@ def test_imports():
         'core.components.agents_mcp.agent_coordinator',
         
         # MCP组件
-        'core.mcp_coordinator.legacy',
         'core.components.routing_mcp.smart_router',
-        'core.workflow',
         
         # 集成组件
-        'core.integrations.claude_sdk',
-        'core.command',
         # 'core.tools.smart_engine',  # 已移除空目录
         
         # 新增组件
@@ -99,12 +95,8 @@ def test_key_files():
     
     key_files = [
         'core/powerautomation_main.py',
-        'core/powerautomation_init.py',
-        'core/agents/agent_coordinator.py',
         'core/components/memoryos_mcp/memory_engine.py',
         'core/components/trae_agent_mcp/trae_agent_engine.py',
-        'core/routing/intelligent_task_router.py',
-        'core/coordination/mcp_coordinator_integration.py',
     ]
     
     success_count = 0

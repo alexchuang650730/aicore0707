@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>平台价值</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e3a8a 0%, #06b6d4 100%);
+            margin: 0 auto;
+            position: relative;
+            overflow: hidden;
+            padding: 60px;
+            color: white;
+        }
+        
+        .page-title {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 42px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 40px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .content-text {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 22px;
+            color: #e0f2fe;
+            line-height: 1.8;
+        }
+        
+        .value-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding: 15px 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+            border-left: 4px solid #f97316;
+        }
+        
+        .value-icon {
+            font-size: 28px;
+            color: #f97316;
+            margin-right: 20px;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .value-title {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .value-desc {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        
+        .highlight-text {
+            color: #f97316;
+            font-weight: bold;
+        }
+        
+        .tech-pattern {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 200px;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 20"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="20" fill="url(%23grid)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background: #f97316;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: bold;
+            font-size: 18px;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">
+            <i class="fas fa-star mr-3"></i>平台价值
+        </h1>
+        
+        <div class="grid grid-cols-2 gap-12">
+            <!-- 左侧价值主张 -->
+            <div>
+                <div class="content-text mb-8">
+                    重新定义AI驱动开发，引领软件开发的智能化未来
+                </div>
+                
+                <div class="value-item">
+                    <div class="value-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div>
+                        <div class="value-title">AI生态系统集成</div>
+                        <div class="value-desc">业界首个集成6大AI生态系统的开发平台，实现49.11%性能提升</div>
+                    </div>
+                </div>
+                
+                <div class="value-item">
+                    <div class="value-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div>
+                        <div class="value-title">智能工具生态</div>
+                        <div class="value-desc">14种专业开发工具的智能发现和协作，85%+推荐准确率</div>
+                    </div>
+                </div>
+                
+                <div class="value-item">
+                    <div class="value-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div>
+                        <div class="value-title">开发效率革命</div>
+                        <div class="value-desc">10倍传统开发速度，95%+错误检测率，98%+部署成功率</div>
+                    </div>
+                </div>
+                
+                <div class="value-item">
+                    <div class="value-icon">
+                        <i class="fas fa-building"></i>
+                    </div>
+                    <div>
+                        <div class="value-title">企业级解决方案</div>
+                        <div class="value-desc">完整的权限管理、团队协作、数据分析和API管理</div>
+                    </div>
+                </div>
+                
+                <div class="mt-8 text-center">
+                    <a href="#" class="cta-button">
+                        <i class="fas fa-download mr-2"></i>立即体验
+                    </a>
+                </div>
+            </div>
+            
+            <!-- 右侧图表和总结 -->
+            <div class="flex flex-col justify-between">
+                <div style="height: 300px;">
+                    <canvas id="valuePropositionChart"></canvas>
+                </div>
+                
+                <div class="bg-white bg-opacity-10 p-6 rounded-lg backdrop-filter backdrop-blur-sm border-l-4 border-f97316 mt-8">
+                    <div class="text-2xl font-bold mb-4">
+                        <i class="fas fa-quote-left text-f97316 mr-2"></i>
+                        未来展望
+                    </div>
+                    <div class="text-white text-lg leading-relaxed">
+                        PowerAutomation + ClaudEditor 4.1是AI驱动开发的未来，通过<span class="highlight-text">长期记忆</span>、<span class="highlight-text">有机智能体</span>和<span class="highlight-text">智能工具生态</span>，为开发者提供前所未有的开发体验。
+                        <br><br>
+                        加入我们，共同开启软件开发的智能化新时代！
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tech-pattern"></div>
+    </div>
+    
+    <script>
+        // 价值主张雷达图
+        const ctx = document.getElementById('valuePropositionChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'radar',
+            data: {
+                labels: ['AI集成', '工具生态', '开发效率', '协作能力', '企业级功能', '自动化程度'],
+                datasets: [{
+                    label: 'PowerAutomation 4.1',
+                    data: [95, 90, 100, 85, 95, 90],
+                    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                    borderColor: '#f97316',
+                    borderWidth: 2,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#f97316',
+                    pointHoverBackgroundColor: '#f97316',
+                    pointHoverBorderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: 'rgba(255, 255, 255, 0.7)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: '平台价值全方位评估',
+                        color: '#ffffff',
+                        font: {
+                            size: 18,
+                            weight: 'bold'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

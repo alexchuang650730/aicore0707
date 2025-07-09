@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MemoryOS长期记忆系统</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .memory-layer {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">MemoryOS长期记忆系统</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div>
+                <div class="section-title">
+                    <i class="fas fa-brain mr-3"></i>
+                    三层记忆架构
+                </div>
+                
+                <div class="memory-layer">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-bolt feature-icon"></i>
+                        <span class="content-text font-semibold">短期记忆 (STM)</span>
+                    </div>
+                    <p class="content-text ml-9 text-sm">
+                        会话级记忆，保存最近交互，容量有限，保留时间短
+                    </p>
+                </div>
+                
+                <div class="memory-layer">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-clock feature-icon"></i>
+                        <span class="content-text font-semibold">中期记忆 (MTM)</span>
+                    </div>
+                    <p class="content-text ml-9 text-sm">
+                        项目级记忆，保存重要概念和上下文，自动整理和分类
+                    </p>
+                </div>
+                
+                <div class="memory-layer">
+                    <div class="flex items-center mb-2">
+                        <i class="fas fa-database feature-icon"></i>
+                        <span class="content-text font-semibold">长期记忆 (LTM)</span>
+                    </div>
+                    <p class="content-text ml-9 text-sm">
+                        用户级记忆，保存关键知识和模式，支持跨会话记忆检索
+                    </p>
+                </div>
+                
+                <div class="section-title mt-6">
+                    <i class="fas fa-chart-line mr-3"></i>
+                    性能提升
+                </div>
+                
+                <div class="feature-item">
+                    <i class="fas fa-tachometer-alt feature-icon"></i>
+                    <span class="content-text">49.11% 整体性能提升</span>
+                </div>
+                
+                <div class="feature-item">
+                    <i class="fas fa-search feature-icon"></i>
+                    <span class="content-text">85% 上下文相关性提升</span>
+                </div>
+                
+                <div class="feature-item">
+                    <i class="fas fa-redo feature-icon"></i>
+                    <span class="content-text">73% 重复工作减少</span>
+                </div>
+                
+                <div class="feature-item">
+                    <i class="fas fa-user-check feature-icon"></i>
+                    <span class="content-text">91% 用户满意度提升</span>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- 性能对比图表 -->
+                <div class="chart-container">
+                    <div class="section-title">性能对比</div>
+                    <div style="height: 250px;">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 记忆架构图 -->
+                <div class="chart-container">
+                    <div class="section-title">记忆流转机制</div>
+                    <div style="height: 250px;">
+                        <canvas id="memoryFlowChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 性能对比图表
+        const performanceCtx = document.getElementById('performanceChart').getContext('2d');
+        const performanceChart = new Chart(performanceCtx, {
+            type: 'bar',
+            data: {
+                labels: ['响应速度', '上下文理解', '任务完成', '知识保留'],
+                datasets: [{
+                    label: '无记忆系统',
+                    data: [65, 59, 70, 45],
+                    backgroundColor: 'rgba(96, 165, 250, 0.5)',
+                    borderColor: 'rgba(96, 165, 250, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'MemoryOS增强',
+                    data: [95, 89, 98, 92],
+                    backgroundColor: 'rgba(52, 211, 153, 0.5)',
+                    borderColor: 'rgba(52, 211, 153, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: {
+                            color: '#c7d2fe'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#c7d2fe'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                }
+            }
+        });
+
+        // 记忆流转机制图表
+        const memoryFlowCtx = document.getElementById('memoryFlowChart').getContext('2d');
+        const memoryFlowChart = new Chart(memoryFlowCtx, {
+            type: 'radar',
+            data: {
+                labels: ['记忆形成', '记忆整理', '记忆检索', '记忆增强', '记忆遗忘', '记忆转移'],
+                datasets: [{
+                    label: '短期记忆',
+                    data: [95, 40, 80, 60, 90, 50],
+                    backgroundColor: 'rgba(96, 165, 250, 0.2)',
+                    borderColor: 'rgba(96, 165, 250, 1)',
+                    pointBackgroundColor: 'rgba(96, 165, 250, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(96, 165, 250, 1)'
+                }, {
+                    label: '中期记忆',
+                    data: [70, 85, 90, 80, 60, 85],
+                    backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                    borderColor: 'rgba(251, 191, 36, 1)',
+                    pointBackgroundColor: 'rgba(251, 191, 36, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(251, 191, 36, 1)'
+                }, {
+                    label: '长期记忆',
+                    data: [40, 95, 95, 95, 30, 40],
+                    backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                    borderColor: 'rgba(52, 211, 153, 1)',
+                    pointBackgroundColor: 'rgba(52, 211, 153, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(52, 211, 153, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: '#c7d2fe'
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#c7d2fe'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

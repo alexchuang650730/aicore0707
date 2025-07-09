@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多模型协同</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .model-box {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .model-icon {
+            font-size: 24px;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">多模型协同</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div>
+                <div class="mb-6">
+                    <h2 class="section-title">
+                        <i class="fas fa-brain mr-3"></i>
+                        端云多模型协同系统
+                    </h2>
+                    <p class="content-text mb-4">
+                        PowerAutomation 4.1实现了Claude + Gemini的智能切换和协同工作，
+                        根据任务类型、性能需求和专业领域自动选择最佳模型。
+                    </p>
+                    
+                    <div class="model-box flex items-center mb-4">
+                        <div class="model-icon" style="background-color: rgba(96, 165, 250, 0.2);">
+                            <i class="fas fa-robot text-blue-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-white mb-1">Claude 3.5 Sonnet</h3>
+                            <p class="content-text">擅长复杂推理、代码生成和长文本理解</p>
+                        </div>
+                    </div>
+                    
+                    <div class="model-box flex items-center">
+                        <div class="model-icon" style="background-color: rgba(52, 211, 153, 0.2);">
+                            <i class="fas fa-microchip text-green-400"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-xl font-semibold text-white mb-1">Gemini 1.5 Pro</h3>
+                            <p class="content-text">擅长多模态理解、视觉分析和快速响应</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl text-blue-200 mb-3">核心协同特性</h3>
+                    <div class="feature-item">
+                        <i class="fas fa-exchange-alt feature-icon"></i>
+                        <span class="content-text">智能模型切换 - 基于任务自动选择</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-sync feature-icon"></i>
+                        <span class="content-text">无缝上下文传递 - 跨模型状态保持</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-tachometer-alt feature-icon"></i>
+                        <span class="content-text">性能优化路由 - 根据负载动态分配</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-puzzle-piece feature-icon"></i>
+                        <span class="content-text">专业能力互补 - 发挥各模型优势</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- 模型性能对比图表 -->
+                <div class="chart-container mb-6">
+                    <h3 class="text-xl text-blue-200 mb-3">模型性能对比</h3>
+                    <div style="height: 300px;">
+                        <canvas id="modelPerformanceChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 任务分配图表 -->
+                <div class="chart-container">
+                    <h3 class="text-xl text-blue-200 mb-3">任务智能分配</h3>
+                    <div style="height: 250px;">
+                        <canvas id="taskAllocationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 模型性能对比图表
+        const performanceCtx = document.getElementById('modelPerformanceChart').getContext('2d');
+        const performanceChart = new Chart(performanceCtx, {
+            type: 'radar',
+            data: {
+                labels: ['代码生成', '文本理解', '推理能力', '视觉分析', '响应速度', '上下文长度'],
+                datasets: [
+                    {
+                        label: 'Claude 3.5 Sonnet',
+                        data: [90, 95, 92, 75, 80, 95],
+                        backgroundColor: 'rgba(96, 165, 250, 0.2)',
+                        borderColor: 'rgba(96, 165, 250, 1)',
+                        pointBackgroundColor: 'rgba(96, 165, 250, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(96, 165, 250, 1)'
+                    },
+                    {
+                        label: 'Gemini 1.5 Pro',
+                        data: [85, 88, 85, 95, 92, 85],
+                        backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                        borderColor: 'rgba(52, 211, 153, 1)',
+                        pointBackgroundColor: 'rgba(52, 211, 153, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(52, 211, 153, 1)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: '#c7d2fe',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#c7d2fe'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            },
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 任务分配图表
+        const taskCtx = document.getElementById('taskAllocationChart').getContext('2d');
+        const taskChart = new Chart(taskCtx, {
+            type: 'bar',
+            data: {
+                labels: ['代码任务', '文档生成', '视觉分析', '数据处理', '创意生成'],
+                datasets: [
+                    {
+                        label: 'Claude 3.5 Sonnet',
+                        data: [75, 80, 30, 60, 65],
+                        backgroundColor: 'rgba(96, 165, 250, 0.7)',
+                        borderColor: 'rgba(96, 165, 250, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Gemini 1.5 Pro',
+                        data: [25, 20, 70, 40, 35],
+                        backgroundColor: 'rgba(52, 211, 153, 0.7)',
+                        borderColor: 'rgba(52, 211, 153, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#c7d2fe'
+                        }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#c7d2fe'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                return `${context.dataset.label}: ${context.raw}%`;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

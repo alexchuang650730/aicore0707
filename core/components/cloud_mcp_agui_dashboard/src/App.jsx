@@ -449,6 +449,482 @@ const AGUIDashboard = () => {
   )
 }
 
+// AG-UI增强的智能部署组件
+const AGUISmartDeployment = () => {
+  const [deployments, setDeployments] = useState([
+    {
+      id: 1,
+      name: "ClaudEditor 4.3",
+      type: "AI编辑器",
+      status: "running",
+      environment: "生产环境",
+      version: "v4.3.0",
+      lastDeploy: "2小时前",
+      aiScore: 98,
+      health: "excellent"
+    },
+    {
+      id: 2,
+      name: "Cloud MCP API",
+      type: "后端服务",
+      status: "running",
+      environment: "生产环境",
+      version: "v2.1.0",
+      lastDeploy: "1天前",
+      aiScore: 95,
+      health: "good"
+    },
+    {
+      id: 3,
+      name: "AG-UI Dashboard",
+      type: "前端界面",
+      status: "deploying",
+      environment: "测试环境",
+      version: "v2.0.0",
+      lastDeploy: "进行中",
+      aiScore: 92,
+      health: "deploying"
+    }
+  ])
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'running': return 'text-green-600 bg-green-100 dark:bg-green-900/30'
+      case 'deploying': return 'text-blue-600 bg-blue-100 dark:bg-blue-900/30'
+      case 'stopped': return 'text-red-600 bg-red-100 dark:bg-red-900/30'
+      case 'warning': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30'
+      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/30'
+    }
+  }
+
+  const getHealthIcon = (health) => {
+    switch (health) {
+      case 'excellent': return <CheckCircle className="h-4 w-4 text-green-600" />
+      case 'good': return <CheckCircle className="h-4 w-4 text-blue-600" />
+      case 'warning': return <AlertTriangle className="h-4 w-4 text-yellow-600" />
+      case 'deploying': return <Clock className="h-4 w-4 text-blue-600 animate-spin" />
+      default: return <AlertTriangle className="h-4 w-4 text-red-600" />
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 页面标题和操作 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+            <Cloud className="h-6 w-6 text-blue-600" />
+            AI智能部署
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">AI驱动的自动化部署管理系统</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            AI分析
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+            <Cloud className="h-4 w-4" />
+            一键部署
+          </Button>
+        </div>
+      </div>
+
+      {/* AI洞察横幅 */}
+      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-700 dark:bg-blue-900/20">
+        <Sparkles className="h-4 w-4 text-blue-600" />
+        <AlertTitle className="text-blue-800 dark:text-blue-200">AI部署洞察</AlertTitle>
+        <AlertDescription className="text-blue-700 dark:text-blue-300">
+          AI检测到3个部署优化机会，预计可提升部署成功率15%，减少部署时间30%。
+          <Button variant="link" className="p-0 h-auto text-blue-600 ml-2">
+            查看AI建议
+          </Button>
+        </AlertDescription>
+      </Alert>
+
+      {/* 部署统计卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {[
+          { title: "活跃部署", value: "8", change: "+2", icon: Cloud, color: "text-blue-600" },
+          { title: "成功率", value: "98.5%", change: "+1.2%", icon: CheckCircle, color: "text-green-600" },
+          { title: "平均时间", value: "3.2分钟", change: "-0.8分钟", icon: Clock, color: "text-purple-600" },
+          { title: "AI优化", value: "15%", change: "+5%", icon: TrendingUp, color: "text-orange-600" }
+        ].map((stat, index) => {
+          const Icon = stat.icon
+          return (
+            <motion.div
+              key={stat.title}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: index * 0.1 }}
+            >
+              <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-medium text-gray-600 dark:text-gray-400">{stat.title}</p>
+                      <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
+                      <p className="text-xs text-green-600">{stat.change} 较上周</p>
+                    </div>
+                    <Icon className={`h-8 w-8 ${stat.color}`} />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+          )
+        })}
+      </div>
+
+      {/* 部署列表 */}
+      <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+                <Server className="h-5 w-5 text-blue-600" />
+                部署管理
+              </CardTitle>
+              <CardDescription className="text-gray-600 dark:text-gray-400">
+                AI智能监控的部署状态和性能指标
+              </CardDescription>
+            </div>
+            <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-300 dark:border-green-700">
+              AI监控中
+            </Badge>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {deployments.map((deployment) => (
+              <motion.div
+                key={deployment.id}
+                className="p-4 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors cursor-pointer"
+                whileHover={{ scale: 1.01 }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="flex items-center space-x-2">
+                      {getHealthIcon(deployment.health)}
+                      <div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{deployment.name}</h3>
+                        <p className="text-sm text-gray-600 dark:text-gray-400">{deployment.type}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-4">
+                      <Badge className={`${getStatusColor(deployment.status)} border-0`}>
+                        {deployment.status === 'running' ? '运行中' : 
+                         deployment.status === 'deploying' ? '部署中' : 
+                         deployment.status === 'stopped' ? '已停止' : '警告'}
+                      </Badge>
+                      <span className="text-sm text-gray-600 dark:text-gray-400">{deployment.environment}</span>
+                      <span className="text-sm font-mono text-gray-600 dark:text-gray-400">{deployment.version}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-4">
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">AI评分</p>
+                      <p className="font-semibold text-blue-600">{deployment.aiScore}%</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-gray-600 dark:text-gray-400">最后部署</p>
+                      <p className="text-sm font-medium text-gray-900 dark:text-white">{deployment.lastDeploy}</p>
+                    </div>
+                    <Button variant="ghost" size="sm">
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 一键部署区域 */}
+      <Card className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 border-blue-200 dark:border-blue-700">
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="p-3 bg-blue-100 dark:bg-blue-800 rounded-lg">
+                <Sparkles className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">AI端云一键部署</h3>
+                <p className="text-gray-600 dark:text-gray-400">
+                  智能分析最佳部署策略，自动化端到云的完整部署流程
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button variant="outline" className="flex items-center gap-2">
+                <Settings className="h-4 w-4" />
+                配置
+              </Button>
+              <Button className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white flex items-center gap-2">
+                <Zap className="h-4 w-4" />
+                启动AI部署
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// AG-UI增强的环境管理组件
+const AGUIEnvironmentManagement = () => {
+  const [environments, setEnvironments] = useState([
+    {
+      id: 1,
+      name: "生产环境",
+      type: "production",
+      status: "running",
+      resources: { cpu: 75, memory: 68, storage: 45 },
+      services: 12,
+      lastUpdate: "2小时前",
+      aiHealth: 95
+    },
+    {
+      id: 2,
+      name: "测试环境",
+      type: "testing",
+      status: "running",
+      resources: { cpu: 45, memory: 52, storage: 30 },
+      services: 8,
+      lastUpdate: "30分钟前",
+      aiHealth: 88
+    },
+    {
+      id: 3,
+      name: "开发环境",
+      type: "development",
+      status: "warning",
+      resources: { cpu: 85, memory: 78, storage: 65 },
+      services: 6,
+      lastUpdate: "1小时前",
+      aiHealth: 72
+    },
+    {
+      id: 4,
+      name: "预发布环境",
+      type: "staging",
+      status: "stopped",
+      resources: { cpu: 0, memory: 0, storage: 25 },
+      services: 0,
+      lastUpdate: "1天前",
+      aiHealth: 0
+    }
+  ])
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'running': return 'text-green-600 bg-green-100 dark:bg-green-900/30'
+      case 'warning': return 'text-yellow-600 bg-yellow-100 dark:bg-yellow-900/30'
+      case 'stopped': return 'text-red-600 bg-red-100 dark:bg-red-900/30'
+      default: return 'text-gray-600 bg-gray-100 dark:bg-gray-900/30'
+    }
+  }
+
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'production': return <Server className="h-5 w-5 text-red-600" />
+      case 'testing': return <Monitor className="h-5 w-5 text-blue-600" />
+      case 'development': return <Cpu className="h-5 w-5 text-green-600" />
+      case 'staging': return <Cloud className="h-5 w-5 text-purple-600" />
+      default: return <Server className="h-5 w-5 text-gray-600" />
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+            <Server className="h-6 w-6 text-blue-600" />
+            AI环境管理
+          </h2>
+          <p className="text-gray-600 dark:text-gray-400">智能化环境配置和资源管理</p>
+        </div>
+        <div className="flex items-center space-x-3">
+          <Button variant="outline" className="flex items-center gap-2">
+            <Bot className="h-4 w-4" />
+            AI优化
+          </Button>
+          <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+            <Cloud className="h-4 w-4" />
+            创建环境
+          </Button>
+        </div>
+      </div>
+
+      {/* 环境概览卡片 */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {environments.map((env, index) => (
+          <motion.div
+            key={env.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            whileHover={{ y: -4 }}
+          >
+            <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700 hover:shadow-xl transition-all duration-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center space-x-2">
+                    {getTypeIcon(env.type)}
+                    <span className="font-semibold text-gray-900 dark:text-white">{env.name}</span>
+                  </div>
+                  <Badge className={`${getStatusColor(env.status)} border-0 text-xs`}>
+                    {env.status === 'running' ? '运行中' : 
+                     env.status === 'warning' ? '警告' : '已停止'}
+                  </Badge>
+                </div>
+                
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600 dark:text-gray-400">服务数量</span>
+                    <span className="font-medium text-gray-900 dark:text-white">{env.services}</span>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">CPU</span>
+                      <span className="text-gray-900 dark:text-white">{env.resources.cpu}%</span>
+                    </div>
+                    <Progress value={env.resources.cpu} className="h-1" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-gray-600 dark:text-gray-400">内存</span>
+                      <span className="text-gray-900 dark:text-white">{env.resources.memory}%</span>
+                    </div>
+                    <Progress value={env.resources.memory} className="h-1" />
+                  </div>
+                  
+                  <div className="flex items-center justify-between text-xs pt-2 border-t border-gray-200 dark:border-gray-700">
+                    <span className="text-gray-600 dark:text-gray-400">AI健康度</span>
+                    <span className="font-medium text-blue-600">{env.aiHealth}%</span>
+                  </div>
+                  
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    更新于 {env.lastUpdate}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* AI环境分析 */}
+      <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm border-gray-200 dark:border-gray-700">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-gray-900 dark:text-white">
+            <Bot className="h-5 w-5 text-blue-600" />
+            AI环境分析
+          </CardTitle>
+          <CardDescription className="text-gray-600 dark:text-gray-400">
+            AI智能分析环境配置和性能优化建议
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <Alert className="border-yellow-200 bg-yellow-50 dark:border-yellow-700 dark:bg-yellow-900/20">
+              <AlertTriangle className="h-4 w-4 text-yellow-600" />
+              <AlertTitle className="text-yellow-800 dark:text-yellow-200">AI优化建议</AlertTitle>
+              <AlertDescription className="text-yellow-700 dark:text-yellow-300">
+                开发环境CPU使用率过高(85%)，建议调整资源配置或优化应用性能。
+              </AlertDescription>
+            </Alert>
+            
+            <Alert className="border-blue-200 bg-blue-50 dark:border-blue-700 dark:bg-blue-900/20">
+              <Sparkles className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-800 dark:text-blue-200">AI洞察</AlertTitle>
+              <AlertDescription className="text-blue-700 dark:text-blue-300">
+                预发布环境已停止1天，AI建议定期启动以保持环境同步。
+              </AlertDescription>
+            </Alert>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+// 其他功能组件的占位符
+const AGUIMonitoring = () => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+      <Activity className="h-6 w-6 text-blue-600" />
+      AI监控
+    </h2>
+    <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+      <CardContent className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">AI监控功能正在开发中...</p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
+const AGUISecurity = () => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+      <Shield className="h-6 w-6 text-blue-600" />
+      安全防护
+    </h2>
+    <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+      <CardContent className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">AI安全防护功能正在开发中...</p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
+const AGUIPerformance = () => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+      <Zap className="h-6 w-6 text-blue-600" />
+      性能优化
+    </h2>
+    <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+      <CardContent className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">AI性能优化功能正在开发中...</p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
+const AGUIUserManagement = () => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+      <Users className="h-6 w-6 text-blue-600" />
+      用户管理
+    </h2>
+    <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+      <CardContent className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">智能用户管理功能正在开发中...</p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
+const AGUISettings = () => (
+  <div className="space-y-6">
+    <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
+      <Settings className="h-6 w-6 text-blue-600" />
+      系统设置
+    </h2>
+    <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
+      <CardContent className="p-6">
+        <p className="text-gray-600 dark:text-gray-400">AI配置助手功能正在开发中...</p>
+      </CardContent>
+    </Card>
+  </div>
+)
+
 // 主应用组件
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -468,52 +944,21 @@ function App() {
       case 'dashboard':
         return <AGUIDashboard />
       case 'environments':
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                  <Server className="h-6 w-6 text-blue-600" />
-                  AI环境管理
-                </h2>
-                <p className="text-gray-600 dark:text-gray-400">智能化环境配置和管理</p>
-              </div>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <Cloud className="h-4 w-4 mr-2" />
-                AI创建环境
-              </Button>
-            </div>
-            <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Bot className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-gray-900 dark:text-white">AI环境分析</span>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">AI正在分析环境配置，智能优化建议即将生成...</p>
-              </CardContent>
-            </Card>
-          </div>
-        )
+        return <AGUIEnvironmentManagement />
+      case 'deployments':
+        return <AGUISmartDeployment />
+      case 'monitoring':
+        return <AGUIMonitoring />
+      case 'security':
+        return <AGUISecurity />
+      case 'performance':
+        return <AGUIPerformance />
+      case 'users':
+        return <AGUIUserManagement />
+      case 'settings':
+        return <AGUISettings />
       default:
-        return (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold flex items-center gap-2 text-gray-900 dark:text-white">
-                <Bot className="h-6 w-6 text-blue-600" />
-                AI功能开发中
-              </h2>
-            </div>
-            <Card className="bg-white/50 dark:bg-gray-800/50 backdrop-blur-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Sparkles className="h-5 w-5 text-blue-600 animate-pulse" />
-                  <span className="font-medium text-gray-900 dark:text-white">AI增强功能</span>
-                </div>
-                <p className="text-gray-600 dark:text-gray-400">该模块正在集成AG-UI协议和AI能力，敬请期待...</p>
-              </CardContent>
-            </Card>
-          </div>
-        )
+        return <AGUIDashboard />
     }
   }
 

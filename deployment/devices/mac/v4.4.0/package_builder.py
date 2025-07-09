@@ -484,6 +484,7 @@ class MyPlugin(Plugin):
             tar.add(self.base_dir / "README.md", arcname="README.md")
             tar.add(self.base_dir / "RELEASE_NOTES.md", arcname="RELEASE_NOTES.md")
             tar.add(self.base_dir / "docs", arcname="docs")
+            tar.add(self.base_dir / "mac_test_environment", arcname="mac_test_environment")
         
         return package_path
     

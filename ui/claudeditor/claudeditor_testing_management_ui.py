@@ -16,9 +16,10 @@ from pathlib import Path
 from fastapi import WebSocket, WebSocketDisconnect
 from fastapi.responses import HTMLResponse, JSONResponse
 
-# 导入测试管理器
-from test.test_manager import get_test_manager, TestType, TestPriority
-from test.ui_test_registry import UITestRegistry
+# 导入测试管理器 - 已迁移到test_mcp
+# from test.test_manager import get_test_manager, TestType, TestPriority
+# from test.ui_test_registry import UITestRegistry
+# TODO: 更新为使用 core.components.test_mcp 的对应功能
 
 # 导入AG-UI组件
 from core.components.ag_ui_mcp.testing_ui_components import (

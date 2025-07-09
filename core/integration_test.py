@@ -31,7 +31,7 @@ def test_imports():
         # 集成组件
         'core.integrations.claude_sdk',
         'core.command',
-        'core.tools.smart_engine',
+        # 'core.tools.smart_engine',  # 已移除空目录
         
         # 新增组件
         'core.components.memoryos_mcp.memory_engine',

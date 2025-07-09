@@ -30,8 +30,8 @@ def update_imports_in_file(file_path):
             r'import PowerAutomation\.claude_sdk': 'import core.integrations.claude_sdk',
             r'from PowerAutomation\.command_master': 'from core.command',
             r'import PowerAutomation\.command_master': 'import core.command',
-            r'from PowerAutomation\.simple_smart_tool_engine': 'from core.tools.smart_engine',
-            r'import PowerAutomation\.simple_smart_tool_engine': 'import core.tools.smart_engine',
+            # r'from PowerAutomation\.simple_smart_tool_engine': 'from core.tools.smart_engine',  # 已移除
+            # r'import PowerAutomation\.simple_smart_tool_engine': 'import core.tools.smart_engine',  # 已移除
             r'from PowerAutomation\.core': 'from core.powerautomation_legacy',
             r'import PowerAutomation\.core': 'import core.powerautomation_legacy',
             r'from PowerAutomation': 'from core',

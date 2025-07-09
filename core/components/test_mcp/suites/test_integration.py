@@ -168,7 +168,7 @@ class PowerAutomationIntegrationTest:
     async def _test_mcp_coordinator(self) -> Dict[str, Any]:
         """测试MCP协调器"""
         try:
-            from PowerAutomation.mcp_coordinator.mcp_coordinator import MCPCoordinator
+            from core.components.mcp_coordinator_mcp.coordinator import MCPCoordinator
             
             coordinator = MCPCoordinator()
             

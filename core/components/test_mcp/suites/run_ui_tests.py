@@ -28,7 +28,7 @@ from datetime import datetime
 # 添加项目路径
 sys.path.append(str(Path(__file__).parent))
 
-from core.testing.claudeditor_ui_test_template import ClaudEditorUITestTemplate
+from core.components.test_mcp.templates.claudeditor_ui_test_template import ClaudEditorUITestTemplate
 
 # 配置日志
 logging.basicConfig(

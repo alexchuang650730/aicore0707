@@ -19,8 +19,8 @@ from typing import Dict, List, Any, Optional
 from dataclasses import dataclass, asdict
 
 # 导入集成的MCP组件
-from ..components.stagewise_mcp.stagewise_recorder_mcp import StagewiseRecorderMCP
-from ..components.stagewise_mcp.recorder_workflow_integration import RecorderWorkflowIntegration
+from core.components.stagewise_mcp.stagewise_recorder_mcp import StagewiseRecorderMCP
+from core.components.stagewise_mcp.recorder_workflow_integration import RecorderWorkflowIntegration
 
 # 配置日志
 logging.basicConfig(level=logging.INFO)

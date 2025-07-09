@@ -1,0 +1,110 @@
+{
+  "name": "claudeditor",
+  "version": "4.5.0",
+  "description": "ClaudeEditor 4.5 + PowerAutomation Core - 智能代码编辑器与自动化平台",
+  "main": "main.py",
+  "scripts": {
+    "start": "python main.py",
+    "test": "python run_tests.py",
+    "test:unit": "python -m pytest tests/unit/ -v",
+    "test:integration": "python -m pytest tests/integration/ -v",
+    "test:e2e": "python -m pytest tests/e2e/ -v",
+    "test:ui": "python -m pytest tests/ui/ -v",
+    "verify": "python scripts/release_verification.py",
+    "build": "python build/build_mac_app.py",
+    "deploy": "docker build -t claudeditor:4.5 .",
+    "dev": "python main.py --debug",
+    "lint": "flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics",
+    "format": "black . --line-length 88",
+    "docs": "sphinx-build -b html docs/ docs/_build/",
+    "clean": "find . -type d -name __pycache__ -exec rm -rf {} + && find . -name '*.pyc' -delete"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/claudeditor/claudeditor-4.5.git"
+  },
+  "keywords": [
+    "editor",
+    "automation",
+    "terminal",
+    "mcp",
+    "ai",
+    "powerautomation",
+    "claude",
+    "ocr",
+    "hitl",
+    "workflow"
+  ],
+  "author": "ClaudeEditor Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/claudeditor/claudeditor-4.5/issues"
+  },
+  "homepage": "https://claudeditor.com",
+  "engines": {
+    "node": ">=16.0.0",
+    "python": ">=3.8.0"
+  },
+  "dependencies": {
+    "electron": "^22.0.0",
+    "electron-builder": "^24.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.0.0",
+    "prettier": "^2.8.0",
+    "typescript": "^4.9.0"
+  },
+  "build": {
+    "appId": "com.claudeditor.app",
+    "productName": "ClaudeEditor",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "**/*",
+      "!tests/",
+      "!docs/",
+      "!.git/",
+      "!*.log"
+    ],
+    "mac": {
+      "category": "public.app-category.developer-tools",
+      "target": [
+        {
+          "target": "dmg",
+          "arch": ["x64", "arm64"]
+        }
+      ]
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "linux": {
+      "target": "AppImage"
+    }
+  },
+  "claudeditor": {
+    "version": "4.5.0",
+    "components": {
+      "powerautomation_core": "4.5.0",
+      "local_adapter_mcp": "1.0.0",
+      "ocr3b_flux_adapter": "1.0.0",
+      "hitl_coordinator": "1.0.0",
+      "repository_manager": "1.0.0"
+    },
+    "features": [
+      "terminal_connections",
+      "workflow_automation",
+      "ocr_processing",
+      "human_in_the_loop",
+      "repository_context",
+      "quick_actions"
+    ],
+    "platforms": [
+      "linux_ec2",
+      "wsl",
+      "mac_terminal"
+    ]
+  }
+}
+

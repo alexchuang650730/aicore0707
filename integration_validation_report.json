@@ -1,0 +1,43 @@
+{
+  "summary": {
+    "total_tests": 6,
+    "passed_tests": 3,
+    "failed_tests": 3,
+    "error_tests": 0,
+    "pass_rate": 50.0,
+    "overall_status": "FAILED"
+  },
+  "test_results": [
+    {
+      "name": "基础导入测试",
+      "status": "FAILED",
+      "result": false
+    },
+    {
+      "name": "配置加载测试",
+      "status": "PASSED",
+      "result": true
+    },
+    {
+      "name": "Test MCP集成测试",
+      "status": "FAILED",
+      "result": false
+    },
+    {
+      "name": "CLI功能测试",
+      "status": "PASSED",
+      "result": true
+    },
+    {
+      "name": "发布引擎测试",
+      "status": "PASSED",
+      "result": true
+    },
+    {
+      "name": "GitHub Actions配置测试",
+      "status": "FAILED",
+      "result": false
+    }
+  ],
+  "timestamp": 392976.806077939
+}

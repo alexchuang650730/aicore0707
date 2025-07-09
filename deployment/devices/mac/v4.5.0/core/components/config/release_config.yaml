@@ -1,0 +1,232 @@
+# Release Trigger MCP 配置文件
+# aicore0707 自动化发布系统配置
+
+# 仓库配置
+repository:
+  url: "https://github.com/alexchuang650730/aicore0707.git"
+  branch: "main"
+  local_path: "/home/ubuntu/aicore0707"
+  
+# 发布配置
+release:
+  # 版本标签模式
+  tag_pattern: "v(\\d+)\\.(\\d+)\\.(\\d+)"
+  
+  # 支持的平台
+  supported_platforms:
+    - "mac"
+    - "windows" 
+    - "linux"
+  
+  # 测试级别映射
+  test_levels:
+    patch: "smoke"      # 补丁版本 -> 冒烟测试
+    minor: "regression" # 次版本 -> 回归测试
+    major: "full"       # 主版本 -> 完整测试
+  
+  # 发布分支策略
+  branch_strategy:
+    main: "stable"      # 主分支为稳定版本
+    develop: "beta"     # 开发分支为测试版本
+    feature: "alpha"    # 功能分支为预览版本
+
+# 质量门禁配置
+quality_gate:
+  # 测试通过率要求
+  min_pass_rate: 98.0
+  
+  # 最大失败测试数
+  max_failed_tests: 2
+  
+  # 必需的测试套件
+  required_test_suites:
+    - "core"
+    - "integration"
+  
+  # 性能阈值
+  performance_thresholds:
+    startup_time: 3.0    # 启动时间 (秒)
+    memory_usage: 200    # 内存使用 (MB)
+    cpu_usage: 5.0       # CPU使用率 (%)
+    response_time: 1.0   # 响应时间 (秒)
+  
+  # 代码质量要求
+  code_quality:
+    min_coverage: 85     # 最低代码覆盖率 (%)
+    max_complexity: 10   # 最大圈复杂度
+    max_duplicates: 3    # 最大重复代码块数
+
+# 部署配置
+deployment:
+  # 自动部署开关
+  auto_deploy: true
+  
+  # 部署目标
+  deployment_targets:
+    - "github_releases"
+    - "mac_app_store"
+    - "internal_registry"
+  
+  # 失败时回滚
+  rollback_on_failure: true
+  
+  # 部署策略
+  strategy:
+    type: "blue_green"   # 蓝绿部署
+    timeout: 1800        # 部署超时 (秒)
+    health_check: true   # 健康检查
+  
+  # 部署环境
+  environments:
+    staging:
+      auto_deploy: true
+      approval_required: false
+    production:
+      auto_deploy: false
+      approval_required: true
+      approvers:
+        - "admin"
+        - "release_manager"
+
+# 通知配置
+notifications:
+  # Slack通知
+  slack:
+    webhook_url: null
+    channels:
+      - "#releases"
+      - "#dev-team"
+    
+  # 邮件通知
+  email:
+    smtp_server: "smtp.gmail.com"
+    smtp_port: 587
+    recipients:
+      - "dev-team@company.com"
+      - "qa-team@company.com"
+    
+  # GitHub通知
+  github:
+    notifications: true
+    create_issues: true
+    mention_users:
+      - "@alexchuang650730"
+
+# Test MCP集成配置
+test_mcp:
+  # 测试框架配置
+  testing_framework:
+    timeout: 300         # 测试超时 (秒)
+    retry_count: 2       # 重试次数
+    parallel: true       # 并行执行
+    max_workers: 4       # 最大工作线程数
+    
+  # 测试运行器配置
+  test_runner:
+    log_level: "INFO"
+    results_dir: "test_results"
+    generate_reports: true
+    
+  # 可视化测试配置
+  visual_testing:
+    enabled: true
+    screenshot_on_failure: true
+    video_recording: false
+    
+  # 性能测试配置
+  performance_testing:
+    enabled: true
+    baseline_file: "performance_baseline.json"
+    threshold_deviation: 10  # 性能偏差阈值 (%)
+
+# 工作流集成配置
+workflow_integration:
+  # Workflow MCP集成
+  workflow_mcp:
+    enabled: true
+    smart_routing: true
+    architecture_compliance: true
+    developer_intervention: true
+    
+  # 智慧路由配置
+  smart_routing:
+    auto_assign_reviewers: true
+    priority_based_scheduling: true
+    load_balancing: true
+    
+  # 架构合规检查
+  architecture_compliance:
+    enforce_patterns: true
+    check_dependencies: true
+    validate_interfaces: true
+    
+  # 开发介入点
+  developer_intervention:
+    manual_approval_required: false
+    emergency_override: true
+    escalation_timeout: 3600  # 升级超时 (秒)
+
+# 监控和日志配置
+monitoring:
+  # 日志配置
+  logging:
+    level: "INFO"
+    format: "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+    file: "logs/release_trigger.log"
+    max_size: "10MB"
+    backup_count: 5
+    
+  # 指标收集
+  metrics:
+    enabled: true
+    endpoint: "http://localhost:9090/metrics"
+    interval: 30  # 收集间隔 (秒)
+    
+  # 健康检查
+  health_check:
+    enabled: true
+    interval: 60  # 检查间隔 (秒)
+    timeout: 10   # 检查超时 (秒)
+
+# 安全配置
+security:
+  # 访问控制
+  access_control:
+    require_authentication: true
+    allowed_users:
+      - "admin"
+      - "release_manager"
+      - "ci_system"
+    
+  # API安全
+  api_security:
+    rate_limiting: true
+    max_requests_per_minute: 100
+    require_api_key: true
+    
+  # 数据保护
+  data_protection:
+    encrypt_sensitive_data: true
+    mask_secrets_in_logs: true
+    secure_storage: true
+
+# 高级配置
+advanced:
+  # 缓存配置
+  caching:
+    enabled: true
+    ttl: 3600  # 缓存生存时间 (秒)
+    max_size: "100MB"
+    
+  # 并发控制
+  concurrency:
+    max_concurrent_releases: 3
+    queue_size: 10
+    worker_timeout: 1800
+    
+  # 实验性功能
+  experimental:
+    ai_powered_testing: false
+    predictive_quality_analysis: false
+    auto_rollback_prediction: false
+

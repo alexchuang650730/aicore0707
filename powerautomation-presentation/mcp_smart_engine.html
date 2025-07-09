@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MCP-Zero Smart Engine</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stat-box {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 15px;
+            text-align: center;
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+        .stat-label {
+            font-size: 16px;
+            color: #c7d2fe;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">MCP-Zero Smart Engine</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div>
+                <div class="mb-6">
+                    <h2 class="section-title">
+                        <i class="fas fa-cogs mr-3"></i>
+                        智能工具引擎概述
+                    </h2>
+                    <p class="content-text mb-4">
+                        MCP-Zero Smart Engine是业界首个AI驱动的工具发现、选择和管理引擎，
+                        支持308个服务器和2,797个工具的大规模发现和智能推荐。
+                    </p>
+                    
+                    <div class="mt-6">
+                        <h3 class="text-xl text-blue-200 mb-3">核心功能特性</h3>
+                        <div class="feature-item">
+                            <i class="fas fa-search feature-icon"></i>
+                            <span class="content-text">多源工具发现 - 6种发现源自动扫描</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-brain feature-icon"></i>
+                            <span class="content-text">AI驱动推荐 - 6维度综合评分系统</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-sitemap feature-icon"></i>
+                            <span class="content-text">统一工具管理 - 完整的工具生命周期</span>
+                        </div>
+                        <div class="feature-item">
+                            <i class="fas fa-project-diagram feature-icon"></i>
+                            <span class="content-text">相似性匹配 - 基于嵌入的智能匹配</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 统计数据 -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="stat-box">
+                        <div class="stat-number">308</div>
+                        <div class="stat-label">支持服务器数量</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">2,797</div>
+                        <div class="stat-label">可发现工具数量</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">85%+</div>
+                        <div class="stat-label">首次推荐成功率</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-number">90%+</div>
+                        <div class="stat-label">工具发现时间节省</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- 工具类型分布图表 -->
+                <div class="chart-container mb-6">
+                    <h3 class="text-xl text-blue-200 mb-3">工具类型分布</h3>
+                    <div style="height: 250px;">
+                        <canvas id="toolTypeChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 推荐准确率图表 -->
+                <div class="chart-container">
+                    <h3 class="text-xl text-blue-200 mb-3">推荐准确率对比</h3>
+                    <div style="height: 250px;">
+                        <canvas id="accuracyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 工具类型分布图表
+        const toolTypeCtx = document.getElementById('toolTypeChart').getContext('2d');
+        const toolTypeChart = new Chart(toolTypeCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['开发工具', '分析工具', '部署工具', '测试工具', '协作工具'],
+                datasets: [{
+                    data: [35, 25, 15, 15, 10],
+                    backgroundColor: [
+                        '#60a5fa',
+                        '#34d399',
+                        '#fbbf24',
+                        '#f87171',
+                        '#a78bfa'
+                    ],
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 推荐准确率图表
+        const accuracyCtx = document.getElementById('accuracyChart').getContext('2d');
+        const accuracyChart = new Chart(accuracyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['MCP-Zero', '传统搜索', '基础推荐', '随机选择'],
+                datasets: [{
+                    label: '推荐准确率 (%)',
+                    data: [85, 45, 60, 25],
+                    backgroundColor: [
+                        '#60a5fa',
+                        '#f87171',
+                        '#fbbf24',
+                        '#a78bfa'
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

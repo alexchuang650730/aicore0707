@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>企业级功能</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .feature-box {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">企业级功能</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div>
+                <div class="feature-box mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-lock mr-3"></i>
+                        企业级权限管理
+                    </h2>
+                    <div class="feature-item">
+                        <i class="fas fa-user-shield feature-icon"></i>
+                        <span class="content-text">基于角色的访问控制 (RBAC)</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-key feature-icon"></i>
+                        <span class="content-text">细粒度权限控制和权限继承</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-history feature-icon"></i>
+                        <span class="content-text">完整安全审计和合规支持</span>
+                    </div>
+                </div>
+                
+                <div class="feature-box mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-users mr-3"></i>
+                        团队协作系统
+                    </h2>
+                    <div class="feature-item">
+                        <i class="fas fa-user-plus feature-icon"></i>
+                        <span class="content-text">智能团队管理和角色分配</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-edit feature-icon"></i>
+                        <span class="content-text">实时文档和代码协作</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-comments feature-icon"></i>
+                        <span class="content-text">集成通信和智能通知</span>
+                    </div>
+                </div>
+                
+                <div class="feature-box">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-bar mr-3"></i>
+                        数据分析报告
+                    </h2>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line feature-icon"></i>
+                        <span class="content-text">18种预定义指标和多维度分析</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-file-alt feature-icon"></i>
+                        <span class="content-text">自动化报告生成和定时分发</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-brain feature-icon"></i>
+                        <span class="content-text">AI驱动的预测性分析和异常检测</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- API集成管理图表 -->
+                <div class="feature-box mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-plug mr-3"></i>
+                        集成API管理
+                    </h2>
+                    <div class="feature-item">
+                        <i class="fas fa-network-wired feature-icon"></i>
+                        <span class="content-text">统一API网关和服务发现</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-shield-alt feature-icon"></i>
+                        <span class="content-text">API认证授权和安全保护</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-tachometer-alt feature-icon"></i>
+                        <span class="content-text">流量控制和性能监控</span>
+                    </div>
+                </div>
+                
+                <!-- 企业级功能使用率图表 -->
+                <div class="chart-container">
+                    <h3 class="text-xl text-blue-200 mb-3">企业级功能使用率</h3>
+                    <div style="height: 250px;">
+                        <canvas id="usageChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 企业级功能价值图表 -->
+                <div class="chart-container">
+                    <h3 class="text-xl text-blue-200 mb-3">企业级功能价值评估</h3>
+                    <div style="height: 250px;">
+                        <canvas id="valueChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 企业级功能使用率图表
+        const usageCtx = document.getElementById('usageChart').getContext('2d');
+        const usageChart = new Chart(usageCtx, {
+            type: 'bar',
+            data: {
+                labels: ['权限管理', '团队协作', '数据分析', 'API集成'],
+                datasets: [{
+                    label: '使用率 (%)',
+                    data: [95, 88, 75, 82],
+                    backgroundColor: [
+                        '#60a5fa',
+                        '#34d399',
+                        '#fbbf24',
+                        '#f87171'
+                    ],
+                    borderWidth: 0,
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // 企业级功能价值图表
+        const valueCtx = document.getElementById('valueChart').getContext('2d');
+        const valueChart = new Chart(valueCtx, {
+            type: 'radar',
+            data: {
+                labels: ['管理效率', '安全合规', '协作效率', '决策支持', '成本节约', '创新能力'],
+                datasets: [{
+                    label: '价值评分',
+                    data: [95, 90, 85, 88, 80, 85],
+                    backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                    borderColor: 'rgba(99, 102, 241, 1)',
+                    pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: '#c7d2fe',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#c7d2fe'
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 100
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

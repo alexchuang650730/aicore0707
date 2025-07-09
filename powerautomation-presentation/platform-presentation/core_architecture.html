@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>核心架构</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: #ffffff;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        
+        .page-title {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 10px;
+        }
+        
+        .content-text {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 20px;
+            color: #374151;
+            line-height: 1.6;
+        }
+        
+        .architecture-layer {
+            background: linear-gradient(135deg, #1e3a8a, #06b6d4);
+            color: white;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .architecture-layer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: #f97316;
+        }
+        
+        .layer-title {
+            font-size: 22px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .layer-desc {
+            font-size: 15px;
+            opacity: 0.9;
+            line-height: 1.4;
+        }
+        
+        .layer-icon {
+            font-size: 24px;
+            margin-right: 12px;
+            color: #f97316;
+        }
+        
+        .component-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .component-item {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #06b6d4;
+            text-align: center;
+        }
+        
+        .component-icon {
+            font-size: 28px;
+            color: #1e3a8a;
+            margin-bottom: 8px;
+        }
+        
+        .component-name {
+            font-size: 16px;
+            font-weight: bold;
+            color: #374151;
+            margin-bottom: 3px;
+        }
+        
+        .component-desc {
+            font-size: 14px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">
+            <i class="fas fa-sitemap mr-3"></i>核心架构
+        </h1>
+        
+        <div class="grid grid-cols-2 gap-10 h-full">
+            <!-- 左侧架构层次 -->
+            <div class="flex flex-col justify-evenly">
+                <div class="architecture-layer">
+                    <div class="layer-title">
+                        <i class="fas fa-cloud layer-icon"></i>
+                        应用层 (Application Layer)
+                    </div>
+                    <div class="layer-desc">
+                        ClaudEditor智能编辑器、Web界面、移动端应用
+                    </div>
+                </div>
+                
+                <div class="architecture-layer">
+                    <div class="layer-title">
+                        <i class="fas fa-brain layer-icon"></i>
+                        智能体层 (Agent Layer)
+                    </div>
+                    <div class="layer-desc">
+                        6大专业智能体协作网络、多模型协调器
+                    </div>
+                </div>
+                
+                <div class="architecture-layer">
+                    <div class="layer-title">
+                        <i class="fas fa-network-wired layer-icon"></i>
+                        协议层 (Protocol Layer)
+                    </div>
+                    <div class="layer-desc">
+                        MCP协议生态、工具发现引擎、统一接口管理
+                    </div>
+                </div>
+                
+                <div class="architecture-layer">
+                    <div class="layer-title">
+                        <i class="fas fa-database layer-icon"></i>
+                        基础层 (Infrastructure Layer)
+                    </div>
+                    <div class="layer-desc">
+                        数据存储、缓存系统、监控告警、安全审计
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧核心组件 -->
+            <div class="flex flex-col justify-evenly">
+                <div class="content-text mb-4">
+                    <div class="text-2xl font-bold text-gray-800 mb-2">核心组件生态</div>
+                    <div class="text-gray-600">
+                        基于MCP协议的模块化架构设计，实现高度可扩展的系统
+                    </div>
+                </div>
+                
+                <div class="component-grid">
+                    <div class="component-item">
+                        <div class="component-icon">
+                            <i class="fas fa-microchip"></i>
+                        </div>
+                        <div class="component-name">MCP-Zero</div>
+                        <div class="component-desc">工具发现</div>
+                    </div>
+                    
+                    <div class="component-item">
+                        <div class="component-icon">
+                            <i class="fas fa-memory"></i>
+                        </div>
+                        <div class="component-name">MemoryOS</div>
+                        <div class="component-desc">记忆系统</div>
+                    </div>
+                    
+                    <div class="component-item">
+                        <div class="component-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                        <div class="component-name">Agent Zero</div>
+                        <div class="component-desc">智能体网络</div>
+                    </div>
+                    
+                    <div class="component-item">
+                        <div class="component-icon">
+                            <i class="fas fa-desktop"></i>
+                        </div>
+                        <div class="component-name">AG-UI MCP</div>
+                        <div class="component-desc">用户交互</div>
+                    </div>
+                    
+                    <div class="component-item">
+                        <div class="component-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <div class="component-name">Zen MCP</div>
+                        <div class="component-desc">开发工具</div>
+                    </div>
+                    
+                    <div class="component-item">
+                        <div class="component-icon">
+                            <i class="fas fa-vial"></i>
+                        </div>
+                        <div class="component-name">Stagewise</div>
+                        <div class="component-desc">自动测试</div>
+                    </div>
+                </div>
+                
+                <div style="height: 180px;">
+                    <canvas id="architectureChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 架构组件分布图
+        const ctx = document.getElementById('architectureChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['应用层', '智能体层', '协议层', '基础层'],
+                datasets: [{
+                    data: [25, 35, 25, 15],
+                    backgroundColor: ['#f97316', '#1e3a8a', '#06b6d4', '#94a3b8'],
+                    borderWidth: 0,
+                    hoverOffset: 10
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            usePointStyle: true,
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    title: {
+                        display: true,
+                        text: '架构层次分布',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#1e3a8a'
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

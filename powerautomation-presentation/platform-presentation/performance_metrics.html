@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>技术指标</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: #ffffff;
+            margin: 0 auto;
+            padding: 60px;
+        }
+        
+        .page-title {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 36px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 40px;
+            border-bottom: 3px solid #f97316;
+            padding-bottom: 10px;
+        }
+        
+        .content-text {
+            font-family: 'Helvetica', sans-serif;
+            font-size: 20px;
+            color: #374151;
+            line-height: 1.8;
+        }
+        
+        .metric-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8fafc;
+            border-left: 4px solid #06b6d4;
+            border-radius: 8px;
+        }
+        
+        .metric-icon {
+            font-size: 24px;
+            color: #1e3a8a;
+            margin-right: 15px;
+            width: 40px;
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 28px;
+            font-weight: bold;
+            color: #f97316;
+            margin-right: 15px;
+            min-width: 100px;
+            text-align: center;
+        }
+        
+        .metric-content {
+            flex: 1;
+        }
+        
+        .metric-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e3a8a;
+            margin-bottom: 5px;
+        }
+        
+        .metric-desc {
+            font-size: 15px;
+            color: #6b7280;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">
+            <i class="fas fa-chart-line mr-3"></i>技术指标
+        </h1>
+        
+        <div class="grid grid-cols-2 gap-12">
+            <!-- 左侧关键指标 -->
+            <div>
+                <div class="content-text mb-6">
+                    <div class="text-2xl font-bold text-gray-800 mb-4">关键性能指标</div>
+                    <div class="text-gray-600 mb-6">
+                        PowerAutomation 4.1在多个关键技术指标上实现突破
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon">
+                        <i class="fas fa-tachometer-alt"></i>
+                    </div>
+                    <div class="metric-value">49.11%</div>
+                    <div class="metric-content">
+                        <div class="metric-title">性能提升</div>
+                        <div class="metric-desc">MemoryOS记忆增强带来的性能提升</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon">
+                        <i class="fas fa-bolt"></i>
+                    </div>
+                    <div class="metric-value">10x</div>
+                    <div class="metric-content">
+                        <div class="metric-title">开发效率</div>
+                        <div class="metric-desc">相比传统开发的效率提升</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon">
+                        <i class="fas fa-bug"></i>
+                    </div>
+                    <div class="metric-value">95%+</div>
+                    <div class="metric-content">
+                        <div class="metric-title">错误检测率</div>
+                        <div class="metric-desc">智能代码分析的错误检测准确率</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <div class="metric-value">98%+</div>
+                    <div class="metric-content">
+                        <div class="metric-title">部署成功率</div>
+                        <div class="metric-desc">自动化部署的成功率</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <div class="metric-icon">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <div class="metric-value">85%+</div>
+                    <div class="metric-content">
+                        <div class="metric-title">工具推荐准确率</div>
+                        <div class="metric-desc">智能工具选择的准确率</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div class="flex flex-col justify-between">
+                <div style="height: 300px;">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+                
+                <div style="height: 300px; margin-top: 20px;">
+                    <canvas id="efficiencyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // 性能指标对比图
+        const ctxPerformance = document.getElementById('performanceChart').getContext('2d');
+        new Chart(ctxPerformance, {
+            type: 'bar',
+            data: {
+                labels: ['性能提升', '开发效率', '错误检测', '部署成功率', '工具推荐'],
+                datasets: [{
+                    label: 'PowerAutomation 4.1',
+                    data: [49.11, 90, 95, 98, 85],
+                    backgroundColor: '#06b6d4',
+                    borderColor: '#0891b2',
+                    borderWidth: 1,
+                    borderRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                indexAxis: 'y',
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: '关键性能指标 (%)',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#1e3a8a'
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: 100,
+                        grid: {
+                            display: true,
+                            color: 'rgba(0, 0, 0, 0.05)'
+                        }
+                    },
+                    y: {
+                        grid: {
+                            display: false
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 效率提升趋势图
+        const ctxEfficiency = document.getElementById('efficiencyChart').getContext('2d');
+        new Chart(ctxEfficiency, {
+            type: 'line',
+            data: {
+                labels: ['传统开发', 'AI辅助', 'PowerAutomation 3.0', 'PowerAutomation 4.0', 'PowerAutomation 4.1'],
+                datasets: [{
+                    label: '开发效率指数',
+                    data: [10, 30, 60, 80, 100],
+                    backgroundColor: 'rgba(249, 115, 22, 0.2)',
+                    borderColor: '#f97316',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    pointBackgroundColor: '#1e3a8a',
+                    pointBorderColor: '#fff',
+                    pointRadius: 6
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    title: {
+                        display: true,
+                        text: '开发效率提升趋势',
+                        font: {
+                            size: 16,
+                            weight: 'bold'
+                        },
+                        color: '#1e3a8a'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 120,
+                        title: {
+                            display: true,
+                            text: '效率指数',
+                            color: '#6b7280'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

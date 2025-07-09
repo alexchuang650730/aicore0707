@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI自动化测试</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .feature-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .feature-icon {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .stage-box {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .stage-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffffff;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">UI自动化测试</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容 -->
+            <div>
+                <div class="mb-6">
+                    <h2 class="section-title">
+                        <i class="fas fa-vial mr-3"></i>
+                        Stagewise MCP + Recorder Workflow
+                    </h2>
+                    <p class="content-text mb-4">
+                        业界首个集成Stagewise MCP和Recorder Workflow的UI自动化测试系统，
+                        实现了完整的端到端测试自动化和可视化录制回放。
+                    </p>
+                    
+                    <div class="mt-6">
+                        <h3 class="text-xl text-blue-200 mb-3">7阶段测试管理</h3>
+                        
+                        <div class="grid grid-cols-2 gap-3">
+                            <div class="stage-box">
+                                <div class="stage-title">
+                                    <i class="fas fa-cog text-blue-400 mr-2"></i> Setup
+                                </div>
+                                <p class="text-sm text-blue-100">环境准备和配置</p>
+                            </div>
+                            
+                            <div class="stage-box">
+                                <div class="stage-title">
+                                    <i class="fas fa-desktop text-green-400 mr-2"></i> UI Load
+                                </div>
+                                <p class="text-sm text-blue-100">界面加载验证</p>
+                            </div>
+                            
+                            <div class="stage-box">
+                                <div class="stage-title">
+                                    <i class="fas fa-mouse-pointer text-yellow-400 mr-2"></i> User Interaction
+                                </div>
+                                <p class="text-sm text-blue-100">用户交互模拟</p>
+                            </div>
+                            
+                            <div class="stage-box">
+                                <div class="stage-title">
+                                    <i class="fas fa-exchange-alt text-red-400 mr-2"></i> API Testing
+                                </div>
+                                <p class="text-sm text-blue-100">API调用验证</p>
+                            </div>
+                            
+                            <div class="stage-box">
+                                <div class="stage-title">
+                                    <i class="fas fa-puzzle-piece text-purple-400 mr-2"></i> Integration
+                                </div>
+                                <p class="text-sm text-blue-100">集成功能测试</p>
+                            </div>
+                            
+                            <div class="stage-box">
+                                <div class="stage-title">
+                                    <i class="fas fa-tachometer-alt text-blue-400 mr-2"></i> Performance
+                                </div>
+                                <p class="text-sm text-blue-100">性能指标测试</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-xl text-blue-200 mb-3">录制功能特色</h3>
+                    <div class="feature-item">
+                        <i class="fas fa-video feature-icon"></i>
+                        <span class="content-text">屏幕录制 - 完整操作视频</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-camera feature-icon"></i>
+                        <span class="content-text">步骤截图 - 关键操作截图</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-database feature-icon"></i>
+                        <span class="content-text">操作数据 - JSON格式操作序列</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-redo feature-icon"></i>
+                        <span class="content-text">智能回放 - 自动重现测试操作</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- 测试覆盖率图表 -->
+                <div class="chart-container mb-6">
+                    <h3 class="text-xl text-blue-200 mb-3">测试覆盖率</h3>
+                    <div style="height: 250px;">
+                        <canvas id="coverageChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 测试效率对比图表 -->
+                <div class="chart-container">
+                    <h3 class="text-xl text-blue-200 mb-3">测试效率对比</h3>
+                    <div style="height: 250px;">
+                        <canvas id="efficiencyChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 测试覆盖率图表
+        const coverageCtx = document.getElementById('coverageChart').getContext('2d');
+        const coverageChart = new Chart(coverageCtx, {
+            type: 'radar',
+            data: {
+                labels: ['UI组件', 'API接口', '用户交互', '边界情况', '错误处理', '性能指标'],
+                datasets: [{
+                    label: '传统测试',
+                    data: [60, 75, 50, 40, 55, 45],
+                    backgroundColor: 'rgba(255, 99, 132, 0.2)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    pointBackgroundColor: 'rgba(255, 99, 132, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(255, 99, 132, 1)'
+                }, {
+                    label: 'Stagewise MCP测试',
+                    data: [95, 90, 95, 85, 90, 85],
+                    backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    pointBackgroundColor: 'rgba(54, 162, 235, 1)',
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: 'rgba(54, 162, 235, 1)'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: '#c7d2fe',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#c7d2fe'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        // 测试效率对比图表
+        const efficiencyCtx = document.getElementById('efficiencyChart').getContext('2d');
+        const efficiencyChart = new Chart(efficiencyCtx, {
+            type: 'bar',
+            data: {
+                labels: ['测试编写时间', '测试执行时间', '错误检测率', '维护成本'],
+                datasets: [{
+                    label: '传统测试',
+                    data: [100, 100, 60, 100],
+                    backgroundColor: 'rgba(255, 99, 132, 0.7)',
+                    borderColor: 'rgba(255, 99, 132, 1)',
+                    borderWidth: 1
+                }, {
+                    label: 'Stagewise MCP测试',
+                    data: [30, 25, 95, 20],
+                    backgroundColor: 'rgba(54, 162, 235, 0.7)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            color: '#c7d2fe'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    },
+                    x: {
+                        ticks: {
+                            color: '#c7d2fe'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                if (context.dataset.label === '传统测试') {
+                                    return context.dataset.label + ': ' + context.raw + '%';
+                                } else {
+                                    return context.dataset.label + ': ' + context.raw + '% (' + (100 - context.raw) + '% 改进)';
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+

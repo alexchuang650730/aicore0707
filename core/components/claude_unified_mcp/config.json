@@ -1,0 +1,29 @@
+{
+  "name": "claude_unified_mcp",
+  "version": "1.0.0",
+  "description": "Simple Claude API MCP - 专注Claude API调用",
+  "type": "mcp",
+  "category": "ai_api",
+  "default_model": "claude-3-5-sonnet-20241022",
+  "supported_models": [
+    "claude-3-5-sonnet-20241022",
+    "claude-3-opus-20240229", 
+    "claude-3-haiku-20240307"
+  ],
+  "capabilities": [
+    "text_generation",
+    "code_generation", 
+    "code_analysis",
+    "conversation"
+  ],
+  "dependencies": [
+    "aiohttp",
+    "asyncio"
+  ],
+  "api": {
+    "base_url": "https://api.anthropic.com/v1/messages",
+    "version": "2023-06-01",
+    "timeout": 30
+  }
+}
+

@@ -64,7 +64,7 @@ def test_mcp_imports():
         'core.components.memoryos_mcp.memory_engine',
         'core.components.trae_agent_mcp.trae_agent_engine',
         'core.routing.intelligent_task_router',
-        'core.coordination.mcp_coordinator_integration',
+        'core.components.mcp_coordinator_mcp.integration_layer',
     ]
     
     success_count = 0

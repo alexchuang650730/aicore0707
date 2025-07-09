@@ -29,3 +29,6 @@ __all__ = [
     "LoadBalancer"
 ]
 
+
+# 新增集成层导入
+from .integration_layer import *

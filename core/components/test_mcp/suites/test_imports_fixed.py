@@ -42,7 +42,7 @@ def test_agent_imports():
     print("\n🤖 测试智能体模块导入...")
     
     agent_modules = [
-        'core.agents.agent_coordinator',
+        'core.components.agents_mcp.agent_coordinator',
     ]
     
     success_count = 0
@@ -63,8 +63,8 @@ def test_mcp_imports():
     mcp_modules = [
         'core.components.memoryos_mcp.memory_engine',
         'core.components.trae_agent_mcp.trae_agent_engine',
-        'core.routing.intelligent_task_router',
-        'core.components.mcp_coordinator_mcp.integration_layer',
+        'core.components.routing_mcp.intelligent_task_router',
+        'core.components.mcp_coordinator_mcp.coordinator',
     ]
     
     success_count = 0
@@ -118,10 +118,10 @@ def test_file_structure():
     required_paths = [
         'core/__init__.py',
         'core/powerautomation_main.py',
-        'core/agents/agent_coordinator.py',
+        'core/components/agents_mcp/agent_coordinator.py',
         'core/components/memoryos_mcp/__init__.py',
         'core/components/trae_agent_mcp/__init__.py',
-        'core/routing/intelligent_task_router.py',
+        'core/components/routing_mcp/intelligent_task_router.py',
     ]
     
     success_count = 0

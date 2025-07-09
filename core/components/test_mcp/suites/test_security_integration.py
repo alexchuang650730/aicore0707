@@ -16,10 +16,10 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from core.security.authenticator import MCPAuthenticator, AuthMethod, UserRole
-from core.security.authorizer import MCPAuthorizer, Permission, Resource, AccessDecision
-from core.security.security_manager import MCPSecurityManager, SecurityEventType, ThreatLevel
-from core.security.token_manager import MCPTokenManager, TokenType, TokenScope
+from core.components.security_mcp.authenticator import MCPAuthenticator, AuthMethod, UserRole
+from core.components.security_mcp.authorizer import MCPAuthorizer, Permission, Resource, AccessDecision
+from core.components.security_mcp.security_manager import MCPSecurityManager, SecurityEventType, ThreatLevel
+from core.components.security_mcp.token_manager import MCPTokenManager, TokenType, TokenScope
 
 
 class TestSecurityIntegration:

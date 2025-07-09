@@ -21,22 +21,20 @@ def test_imports():
         'core.parallel_executor',
         
         # 智能体系统
-        'core.agents.agent_coordinator',
+        'core.components.agents_mcp.agent_coordinator',
         
         # MCP组件
-        'core.mcp_coordinator.legacy',
-        'core.routing.smart_router',
-        'core.workflow',
+        'core.components.mcp_coordinator_mcp.coordinator',
+        'core.components.routing_mcp.smart_router',
         
         # 集成组件
         'core.integrations.claude_sdk',
         'core.command',
-        # 'core.tools.smart_engine',  # 已移除空目录
         
         # 新增组件
         'core.components.memoryos_mcp.memory_engine',
         'core.components.trae_agent_mcp.trae_agent_engine',
-        'core.routing.intelligent_task_router',
+        'core.components.routing_mcp.intelligent_task_router',
     ]
     
     success_count = 0
@@ -63,16 +61,13 @@ def test_directory_structure():
     print("\n🏗️ 测试目录结构...")
     
     required_dirs = [
-        'core/agents/specialized',
-        'core/agents/communication', 
-        'core/agents/coordination',
-        'core/mcp_coordinator/legacy',
-        'core/routing/smart_router',
-        'core/workflow',
+        'core/components/agents_mcp/specialized',
+        'core/components/agents_mcp/communication', 
+        'core/components/agents_mcp/coordination',
+        'core/components/mcp_coordinator_mcp/legacy',
+        'core/components/routing_mcp/smart_router',
         'core/integrations/claude_sdk',
         'core/command',
-        'core/tools/smart_engine',
-        'core/powerautomation_legacy',
         'core/components/memoryos_mcp',
         'core/components/trae_agent_mcp',
     ]
@@ -100,11 +95,11 @@ def test_key_files():
     key_files = [
         'core/powerautomation_main.py',
         'core/powerautomation_init.py',
-        'core/agents/agent_coordinator.py',
+        'core/components/agents_mcp/agent_coordinator.py',
         'core/components/memoryos_mcp/memory_engine.py',
         'core/components/trae_agent_mcp/trae_agent_engine.py',
-        'core/routing/intelligent_task_router.py',
-        'core/coordination/mcp_coordinator_integration.py',
+        'core/components/routing_mcp/intelligent_task_router.py',
+        'core/components/mcp_coordinator_mcp/coordinator.py',
     ]
     
     success_count = 0
@@ -128,12 +123,12 @@ def test_agent_components():
     print("\n🤖 测试智能体组件...")
     
     agent_dirs = [
-        'core/agents/specialized/architect_agent',
-        'core/agents/specialized/deploy_agent',
-        'core/agents/specialized/developer_agent',
-        'core/agents/specialized/monitor_agent',
-        'core/agents/specialized/security_agent',
-        'core/agents/specialized/test_agent',
+        'core/components/agents_mcp/specialized/architect_agent',
+        'core/components/agents_mcp/specialized/deploy_agent',
+        'core/components/agents_mcp/specialized/developer_agent',
+        'core/components/agents_mcp/specialized/monitor_agent',
+        'core/components/agents_mcp/specialized/security_agent',
+        'core/components/agents_mcp/specialized/test_agent',
     ]
     
     success_count = 0

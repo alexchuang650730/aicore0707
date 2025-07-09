@@ -17,6 +17,7 @@ ClaudEditor 4.2 引入了全新的 Test MCP (Model Context Protocol) 测试平�
 - **🔄 实时通信系统** - WebSocket支持的实时数据更新
 - **📱 响应式设计** - 支持多设备和多分辨率的完整适配
 - **🧠 AI深度集成** - Claude AI全程参与测试过程
+- **🏗️ 统一MCP架构** - 18个MCP组件的完整生态系统
 
 ## 📁 **Test MCP 架构概览**
 

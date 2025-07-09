@@ -18,12 +18,12 @@ def update_imports_in_file(file_path):
         
         # 更新导入路径映射
         import_mappings = {
-            r'from PowerAutomation\.agent_squad': 'from core.agents',
-            r'import PowerAutomation\.agent_squad': 'import core.agents',
+            r'from PowerAutomation\.agent_squad': 'from core.components.agents_mcp',
+            r'import PowerAutomation\.agent_squad': 'import core.components.agents_mcp',
             r'from PowerAutomation\.mcp_coordinator': 'from core.mcp_coordinator.legacy',
             r'import PowerAutomation\.mcp_coordinator': 'import core.mcp_coordinator.legacy',
-            r'from PowerAutomation\.smart_router_mcp': 'from core.routing.smart_router',
-            r'import PowerAutomation\.smart_router_mcp': 'import core.routing.smart_router',
+            r'from PowerAutomation\.smart_router_mcp': 'from core.components.routing_mcp.smart_router',
+            r'import PowerAutomation\.smart_router_mcp': 'import core.components.routing_mcp.smart_router',
             r'from PowerAutomation\.workflow_mcp': 'from core.workflow',
             r'import PowerAutomation\.workflow_mcp': 'import core.workflow',
             r'from PowerAutomation\.claude_sdk': 'from core.integrations.claude_sdk',

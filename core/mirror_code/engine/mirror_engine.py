@@ -30,23 +30,27 @@ try:
     from ..communication.comm_manager import CommunicationManager
     from ..git_integration.git_manager import GitManager
     from ..file_monitor.file_watcher import FileWatcher
+    from ..command_execution.claude_integration import ClaudeIntegration
 except ImportError:
     try:
         from sync.sync_manager import SyncManager
         from communication.comm_manager import CommunicationManager
         from git_integration.git_manager import GitManager
         from file_monitor.file_watcher import FileWatcher
+        from command_execution.claude_integration import ClaudeIntegration
     except ImportError:
         # 如果仍然失败，导入单个文件
         sys.path.insert(0, os.path.join(parent_dir, "sync"))
         sys.path.insert(0, os.path.join(parent_dir, "communication"))
         sys.path.insert(0, os.path.join(parent_dir, "git_integration"))
         sys.path.insert(0, os.path.join(parent_dir, "file_monitor"))
+        sys.path.insert(0, os.path.join(parent_dir, "command_execution"))
         
         from sync_manager import SyncManager
         from comm_manager import CommunicationManager
         from git_manager import GitManager
         from file_watcher import FileWatcher
+        from claude_integration import ClaudeIntegration
 
 class MirrorEngine:
     """Mirror引擎 - 代码镜像的核心控制器"""
@@ -82,6 +86,7 @@ class MirrorEngine:
         self.comm_manager = CommunicationManager(self.config.get("communication", {}))
         self.git_manager = GitManager(self.config.get("git", {}))
         self.file_watcher = FileWatcher(self.config.get("file_monitor", {}))
+        self.claude_integration = ClaudeIntegration(self.config.get("claude_integration", {}))
         
         # 活跃连接
         self.active_connections = set()
@@ -376,6 +381,9 @@ class MirrorEngine:
         # 启动Git管理器
         await self.git_manager.start(self.local_path)
         
+        # 启动Claude集成
+        await self.claude_integration.start()
+        
         self.logger.info("核心组件启动完成")
     
     async def _establish_connections(self):
@@ -481,6 +489,85 @@ class MirrorEngine:
                 "level": "INFO"
             }
         }
+    
+    async def execute_claude_command(self, 
+                                   model: str = "claude-sonnet-4-20250514",
+                                   working_dir: Optional[str] = None,
+                                   additional_args: Optional[List[str]] = None) -> Dict[str, Any]:
+        """
+        通过Local Adapter执行Claude命令并同步到ClaudEditor
+        
+        Args:
+            model: Claude模型名称
+            working_dir: 工作目录
+            additional_args: 额外参数
+            
+        Returns:
+            Dict: 执行结果
+        """
+        try:
+            if not self.claude_integration:
+                return {
+                    "success": False,
+                    "error": "Claude集成组件未初始化"
+                }
+            
+            # 使用当前Mirror引擎的本地路径作为默认工作目录
+            work_dir = working_dir or self.local_path
+            
+            self.logger.info(f"执行Claude命令: {model} (工作目录: {work_dir})")
+            
+            # 通过Claude集成执行命令
+            result = await self.claude_integration.execute_claude_with_sync(
+                model=model,
+                working_dir=work_dir,
+                additional_args=additional_args
+            )
+            
+            return result
+            
+        except Exception as e:
+            self.logger.error(f"执行Claude命令失败: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
+    
+    async def get_claude_integration_status(self) -> Dict[str, Any]:
+        """
+        获取Claude集成状态
+        
+        Returns:
+            Dict: 集成状态
+        """
+        try:
+            if not self.claude_integration:
+                return {
+                    "success": False,
+                    "error": "Claude集成组件未初始化"
+                }
+            
+            # 获取活跃集成列表
+            integrations = []
+            for integration_id in self.claude_integration.active_integrations:
+                status = await self.claude_integration.get_integration_status(integration_id)
+                if status.get("success"):
+                    integrations.append(status)
+            
+            return {
+                "success": True,
+                "active_integrations": integrations,
+                "total_count": len(integrations),
+                "sync_enabled": self.claude_integration.sync_enabled,
+                "claudeditor_connected": self.claude_integration.claudeditor_sync.is_connected
+            }
+            
+        except Exception as e:
+            self.logger.error(f"获取Claude集成状态失败: {e}")
+            return {
+                "success": False,
+                "error": str(e)
+            }
     
     def _setup_logger(self) -> logging.Logger:
         """设置日志"""

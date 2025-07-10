@@ -1,0 +1,196 @@
+{
+  "verification_time": "2025-07-10T15:46:37.144682",
+  "base_path": "/home/ubuntu/aicore0707",
+  "components": {
+    "claudeditor_ui": {
+      "components": {
+        "App.jsx": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/App.jsx",
+          "size": 682
+        },
+        "App.css": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/App.css",
+          "size": 593
+        },
+        "main.jsx": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/main.jsx",
+          "size": 236
+        },
+        "index.css": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/index.css",
+          "size": 443
+        },
+        "MonacoEditor.jsx": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/editor/MonacoEditor.jsx",
+          "size": 5957
+        },
+        "ai-assistant/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/ai-assistant",
+          "size": null
+        },
+        "collaboration/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/collaboration",
+          "size": null
+        },
+        "components/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/components",
+          "size": null
+        },
+        "editor/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/editor",
+          "size": null
+        },
+        "lsp/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/lsp",
+          "size": null
+        },
+        "hooks/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/src/hooks",
+          "size": null
+        },
+        "index.html": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/index.html",
+          "size": 386
+        },
+        "package.json": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/package.json",
+          "size": 578
+        },
+        "vite.config.js": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/claudeditor/ui/vite.config.js",
+          "size": 578
+        }
+      },
+      "found": 14,
+      "total": 14,
+      "percentage": 100.0
+    },
+    "core_components": {
+      "components": {
+        "local_adapter_mcp/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/components/local_adapter_mcp"
+        },
+        "ag_ui_mcp/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/components/ag_ui_mcp"
+        },
+        "agent_zero_mcp/": {
+          "exists": false,
+          "path": "/home/ubuntu/aicore0707/core/components/agent_zero_mcp"
+        },
+        "agents_mcp/": {
+          "exists": false,
+          "path": "/home/ubuntu/aicore0707/core/components/agents_mcp"
+        },
+        "claude_mcp/": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/components/claude_mcp"
+        },
+        "claude_unified_mcp/": {
+          "exists": false,
+          "path": "/home/ubuntu/aicore0707/core/components/claude_unified_mcp"
+        },
+        "collaboration_mcp/": {
+          "exists": false,
+          "path": "/home/ubuntu/aicore0707/core/components/collaboration_mcp"
+        },
+        "command_mcp/": {
+          "exists": false,
+          "path": "/home/ubuntu/aicore0707/core/components/command_mcp"
+        },
+        "config_mcp/": {
+          "exists": false,
+          "path": "/home/ubuntu/aicore0707/core/components/config_mcp"
+        }
+      },
+      "found": 3,
+      "total": 9,
+      "percentage": 33.33333333333333
+    },
+    "powerautomation_core": {
+      "components": {
+        "__init__.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/deployment/devices/mac/v4.5.0/core/powerautomation_core/__init__.py",
+          "size": 3547
+        },
+        "automation_core.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/deployment/devices/mac/v4.5.0/core/powerautomation_core/automation_core.py",
+          "size": 17101
+        },
+        "workflow_engine.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/deployment/devices/mac/v4.5.0/core/powerautomation_core/workflow_engine.py",
+          "size": 24579
+        },
+        "task_scheduler.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/deployment/devices/mac/v4.5.0/core/powerautomation_core/task_scheduler.py",
+          "size": 25797
+        },
+        "resource_manager.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/deployment/devices/mac/v4.5.0/core/powerautomation_core/resource_manager.py",
+          "size": 18770
+        },
+        "monitoring_service.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/deployment/devices/mac/v4.5.0/core/powerautomation_core/monitoring_service.py",
+          "size": 24864
+        }
+      },
+      "found": 6,
+      "total": 6,
+      "percentage": 100.0
+    },
+    "mirror_code": {
+      "components": {
+        "mirror_engine.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/mirror_code/engine/mirror_engine.py",
+          "size": 19246
+        },
+        "sync_manager.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/mirror_code/sync/sync_manager.py",
+          "size": 19500
+        },
+        "comm_manager.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/mirror_code/communication/comm_manager.py",
+          "size": 18518
+        },
+        "launch_mirror.py": {
+          "exists": true,
+          "path": "/home/ubuntu/aicore0707/core/mirror_code/launch_mirror.py",
+          "size": 8792
+        }
+      },
+      "found": 4,
+      "total": 4,
+      "percentage": 100.0
+    }
+  },
+  "summary": {
+    "total_found": 27,
+    "total_components": 33,
+    "overall_percentage": 81.81818181818183,
+    "previous_error": "之前验证路径错误，ClaudEditor UI实际存在"
+  }
+}

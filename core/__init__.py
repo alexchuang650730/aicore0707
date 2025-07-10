@@ -1,13 +1,23 @@
 """
-PowerAutomation 4.0 Core Module
-核心模块，提供并行任务管理和基础框架
+Core 模块初始化
+包含所有核心组件
 """
 
-from .task_manager import TaskManager
-from .parallel_executor import ParallelExecutor
-from .event_bus import EventBus
-from .config import PowerAutomationConfig as Config, get_config
+import os
+import sys
 
-__version__ = "4.0.0"
-__all__ = ["TaskManager", "ParallelExecutor", "EventBus", "Config"]
+# 添加当前目录到Python路径
+current_dir = os.path.dirname(os.path.abspath(__file__))
+if current_dir not in sys.path:
+    sys.path.insert(0, current_dir)
+
+# 添加组件目录
+components_dir = os.path.join(current_dir, "components")
+if components_dir not in sys.path:
+    sys.path.insert(0, components_dir)
+
+# 添加mirror_code目录
+mirror_code_dir = os.path.join(current_dir, "mirror_code")
+if mirror_code_dir not in sys.path:
+    sys.path.insert(0, mirror_code_dir)
 

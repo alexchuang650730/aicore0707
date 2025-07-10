@@ -307,7 +307,8 @@ class CrossPlatformCommandAdapter:
             if len(parts) >= 3:
                 drive = parts[2].upper()
                 remaining = "/".join(parts[3:])
-                return f"{drive}:\\{remaining.replace('/', '\\')}"
+                backslash = "\\"
+                return f"{drive}:{backslash}{remaining.replace('/', backslash)}"
         
         # 其他情况保持不变
         return path

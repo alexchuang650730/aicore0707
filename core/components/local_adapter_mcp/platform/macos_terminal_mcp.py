@@ -431,10 +431,8 @@ class MacOSTerminalMCP:
                 "fastlane"
             ]
         }
-
-
-            
-            return result
+        
+        return result
             
         except Exception as e:
             self.logger.error(f"执行macOS命令失败: {e}")

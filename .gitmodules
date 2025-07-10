@@ -1,0 +1,3 @@
+[submodule "claudeditor/claudeditor-ui"]
+	path = claudeditor/claudeditor-ui
+	url = ./claudeditor/claudeditor-ui

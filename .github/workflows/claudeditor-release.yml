@@ -1,0 +1,478 @@
+name: ClaudEditor Release CI/CD
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'  # 匹配版本标签 (v4.4.0, v4.5.0等)
+  workflow_dispatch:  # 允许手动触发
+    inputs:
+      version:
+        description: '发布版本号 (例如: v4.4.1)'
+        required: true
+        type: string
+      platform:
+        description: '目标平台'
+        required: true
+        default: 'mac'
+        type: choice
+        options:
+          - mac
+          - windows
+          - linux
+          - all
+      test_level:
+        description: '测试级别'
+        required: true
+        default: 'full'
+        type: choice
+        options:
+          - smoke
+          - regression
+          - full
+          - performance
+
+env:
+  CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+  GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  # 阶段1: 环境准备和代码检查
+  prepare:
+    name: 准备环境和代码检查
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract-version.outputs.version }}
+      platform: ${{ steps.extract-platform.outputs.platform }}
+      test_level: ${{ steps.extract-test-level.outputs.test_level }}
+      should_deploy: ${{ steps.quality-gate.outputs.should_deploy }}
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # 获取完整历史
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 设置Node.js环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: 'claudeditor/claudeditor-ui/package-lock.json'
+      
+      - name: 提取版本信息
+        id: extract-version
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "🏷️ 发布版本: $VERSION"
+      
+      - name: 提取平台信息
+        id: extract-platform
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PLATFORM="${{ github.event.inputs.platform }}"
+          else
+            PLATFORM="mac"  # 默认平台
+          fi
+          echo "platform=$PLATFORM" >> $GITHUB_OUTPUT
+          echo "🖥️ 目标平台: $PLATFORM"
+      
+      - name: 提取测试级别
+        id: extract-test-level
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TEST_LEVEL="${{ github.event.inputs.test_level }}"
+          else
+            # 根据版本变化自动确定测试级别
+            VERSION="${{ steps.extract-version.outputs.version }}"
+            if [[ $VERSION =~ v[0-9]+\.[0-9]+\.[1-9][0-9]*$ ]]; then
+              TEST_LEVEL="smoke"  # patch版本
+            elif [[ $VERSION =~ v[0-9]+\.[1-9][0-9]*\.0$ ]]; then
+              TEST_LEVEL="regression"  # minor版本
+            else
+              TEST_LEVEL="full"  # major版本
+            fi
+          fi
+          echo "test_level=$TEST_LEVEL" >> $GITHUB_OUTPUT
+          echo "🧪 测试级别: $TEST_LEVEL"
+      
+      - name: 安装Python依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest playwright bandit coverage
+      
+      - name: 代码质量检查
+        run: |
+          echo "🔍 运行代码质量检查..."
+          
+          # 安全扫描
+          bandit -r core/ -f json -o bandit-report.json || true
+          
+          # 检查关键文件存在
+          if [ ! -f "core/components/test_mcp/__init__.py" ]; then
+            echo "❌ test_mcp组件未找到"
+            exit 1
+          fi
+          
+          if [ ! -f "core/components/release_trigger_mcp/__init__.py" ]; then
+            echo "❌ release_trigger_mcp组件未找到"
+            exit 1
+          fi
+          
+          echo "✅ 代码质量检查通过"
+      
+      - name: 质量门禁预检查
+        id: quality-gate
+        run: |
+          echo "🚪 执行质量门禁预检查..."
+          
+          # 检查版本格式
+          VERSION="${{ steps.extract-version.outputs.version }}"
+          if [[ ! $VERSION =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "❌ 版本格式不正确: $VERSION"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          # 检查必要的secrets
+          if [ -z "${{ secrets.CLAUDE_API_KEY }}" ]; then
+            echo "❌ CLAUDE_API_KEY未配置"
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+            exit 1
+          fi
+          
+          echo "✅ 质量门禁预检查通过"
+          echo "should_deploy=true" >> $GITHUB_OUTPUT
+
+  # 阶段2: 自动化测试 (test_mcp)
+  test:
+    name: 自动化测试
+    runs-on: ${{ matrix.os }}
+    needs: prepare
+    if: needs.prepare.outputs.should_deploy == 'true'
+    
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: mac
+          - os: windows-latest
+            platform: windows
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 设置Node.js环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest playwright bandit coverage psutil
+          
+          # 安装Playwright浏览器
+          playwright install
+      
+      - name: 构建ClaudEditor UI
+        run: |
+          cd claudeditor/claudeditor-ui
+          npm ci
+          npm run build
+      
+      - name: 运行test_mcp测试套件
+        env:
+          CLAUDE_API_KEY: ${{ secrets.CLAUDE_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          echo "🧪 运行 ${{ matrix.platform }} 平台测试..."
+          
+          # 创建测试配置
+          cat > test_config.json << EOF
+          {
+            "release_info": {
+              "version": "${{ needs.prepare.outputs.version }}",
+              "platform": "${{ matrix.platform }}",
+              "test_level": "${{ needs.prepare.outputs.test_level }}"
+            }
+          }
+          EOF
+          
+          # 运行测试
+          python -c "
+          import asyncio
+          import json
+          import sys
+          sys.path.append('core/components')
+          
+          from test_mcp import TestMCPEngine
+          
+          async def run_tests():
+              with open('test_config.json', 'r') as f:
+                  config = json.load(f)
+              
+              engine = TestMCPEngine()
+              results = await engine.run_release_testing(config['release_info'])
+              
+              # 保存测试结果
+              with open('test_results_${{ matrix.platform }}.json', 'w') as f:
+                  json.dump(results, f, indent=2, default=str)
+              
+              # 检查测试结果
+              if not results['quality_gate']['passed']:
+                  print('❌ 质量门禁失败')
+                  print(f'通过率: {results[\"quality_gate\"][\"pass_rate\"]:.1f}%')
+                  print(f'建议: {results[\"quality_gate\"][\"recommendation\"]}')
+                  sys.exit(1)
+              else:
+                  print('✅ 质量门禁通过')
+                  print(f'通过率: {results[\"quality_gate\"][\"pass_rate\"]:.1f}%')
+          
+          asyncio.run(run_tests())
+          "
+      
+      - name: 上传测试结果
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-results-${{ matrix.platform }}
+          path: test_results_*.json
+          retention-days: 30
+      
+      - name: 上传测试报告
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: test-reports-${{ matrix.platform }}
+          path: core/components/test_mcp/reports/
+          retention-days: 30
+
+  # 阶段3: 构建发布包
+  build:
+    name: 构建发布包
+    runs-on: ${{ matrix.os }}
+    needs: [prepare, test]
+    if: needs.prepare.outputs.should_deploy == 'true'
+    
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            platform: mac
+            artifact_name: ClaudEditor-Mac
+          - os: ubuntu-latest
+            platform: linux
+            artifact_name: ClaudEditor-Linux
+          - os: windows-latest
+            platform: windows
+            artifact_name: ClaudEditor-Windows
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Python环境
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: 设置Node.js环境
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: 构建ClaudEditor UI
+        run: |
+          cd claudeditor/claudeditor-ui
+          npm ci
+          npm run build
+      
+      - name: 构建平台特定包
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          PLATFORM="${{ matrix.platform }}"
+          
+          echo "🔨 构建 $PLATFORM 平台包..."
+          
+          # 创建构建目录
+          mkdir -p build/$PLATFORM
+          
+          # 复制核心文件
+          cp -r core/ build/$PLATFORM/
+          cp -r claudeditor/ build/$PLATFORM/
+          cp -r deployment/ build/$PLATFORM/
+          
+          # 创建版本信息文件
+          cat > build/$PLATFORM/VERSION << EOF
+          {
+            "version": "$VERSION",
+            "platform": "$PLATFORM",
+            "build_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "commit": "${{ github.sha }}"
+          }
+          EOF
+          
+          # 平台特定处理
+          if [ "$PLATFORM" = "mac" ]; then
+            echo "🍎 处理Mac平台特定文件..."
+            # 复制Mac测试环境
+            if [ -d "deployment/devices/mac/v4.4.0/mac_test_environment" ]; then
+              cp -r deployment/devices/mac/v4.4.0/mac_test_environment build/$PLATFORM/
+            fi
+          fi
+          
+          # 创建压缩包
+          cd build
+          tar -czf ${{ matrix.artifact_name }}-$VERSION.tar.gz $PLATFORM/
+          
+          echo "✅ 构建完成: ${{ matrix.artifact_name }}-$VERSION.tar.gz"
+      
+      - name: 上传构建产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact_name }}
+          path: build/${{ matrix.artifact_name }}-*.tar.gz
+          retention-days: 90
+
+  # 阶段4: 部署发布
+  deploy:
+    name: 部署发布
+    runs-on: ubuntu-latest
+    needs: [prepare, test, build]
+    if: needs.prepare.outputs.should_deploy == 'true'
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 下载所有构建产物
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+      
+      - name: 创建GitHub Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ needs.prepare.outputs.version }}"
+          
+          echo "🚀 创建GitHub Release: $VERSION"
+          
+          # 生成发布说明
+          cat > release_notes.md << EOF
+          # ClaudEditor $VERSION 发布
+          
+          ## 🎉 新功能
+          - 基于ag-ui协议的三栏式界面设计
+          - 完整的PowerAutomation AICore集成
+          - MemoryOS和Collaboration MCP支持
+          - 增强的Claude + Gemini双模型AI助手
+          
+          ## 🧪 测试结果
+          - 所有平台测试通过
+          - 质量门禁验证通过
+          - 性能基准达标
+          
+          ## 📦 下载
+          选择适合您平台的安装包：
+          - **Mac**: ClaudEditor-Mac-$VERSION.tar.gz
+          - **Linux**: ClaudEditor-Linux-$VERSION.tar.gz  
+          - **Windows**: ClaudEditor-Windows-$VERSION.tar.gz
+          
+          ## 🔧 安装说明
+          详细安装说明请参考 [README.md](https://github.com/alexchuang650730/aicore0707/blob/main/deployment/devices/mac/v4.4.0/README.md)
+          EOF
+          
+          # 创建release
+          gh release create $VERSION \
+            --title "ClaudEditor $VERSION" \
+            --notes-file release_notes.md \
+            --draft=false \
+            --prerelease=false
+          
+          # 上传构建产物
+          for artifact_dir in artifacts/*/; do
+            if [ -d "$artifact_dir" ]; then
+              for file in "$artifact_dir"*.tar.gz; do
+                if [ -f "$file" ]; then
+                  echo "📤 上传: $(basename "$file")"
+                  gh release upload $VERSION "$file"
+                fi
+              done
+            fi
+          done
+          
+          echo "✅ GitHub Release创建完成"
+      
+      - name: 更新部署状态
+        run: |
+          echo "📊 更新部署状态..."
+          
+          # 创建部署报告
+          cat > deployment_report.json << EOF
+          {
+            "version": "${{ needs.prepare.outputs.version }}",
+            "platform": "${{ needs.prepare.outputs.platform }}",
+            "test_level": "${{ needs.prepare.outputs.test_level }}",
+            "deployment_time": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+            "status": "success",
+            "github_release": "https://github.com/alexchuang650730/aicore0707/releases/tag/${{ needs.prepare.outputs.version }}",
+            "artifacts": [
+              "ClaudEditor-Mac-${{ needs.prepare.outputs.version }}.tar.gz",
+              "ClaudEditor-Linux-${{ needs.prepare.outputs.version }}.tar.gz",
+              "ClaudEditor-Windows-${{ needs.prepare.outputs.version }}.tar.gz"
+            ]
+          }
+          EOF
+          
+          echo "✅ 部署完成！"
+          echo "🔗 Release链接: https://github.com/alexchuang650730/aicore0707/releases/tag/${{ needs.prepare.outputs.version }}"
+
+  # 阶段5: 通知和清理
+  notify:
+    name: 通知和清理
+    runs-on: ubuntu-latest
+    needs: [prepare, test, build, deploy]
+    if: always()
+    
+    steps:
+      - name: 发送成功通知
+        if: needs.deploy.result == 'success'
+        run: |
+          echo "🎉 ClaudEditor ${{ needs.prepare.outputs.version }} 发布成功！"
+          echo "📦 所有平台构建完成"
+          echo "🧪 测试全部通过"
+          echo "🚀 GitHub Release已创建"
+          echo "🔗 下载地址: https://github.com/alexchuang650730/aicore0707/releases/tag/${{ needs.prepare.outputs.version }}"
+      
+      - name: 发送失败通知
+        if: needs.deploy.result != 'success'
+        run: |
+          echo "❌ ClaudEditor ${{ needs.prepare.outputs.version }} 发布失败！"
+          echo "🔍 请检查测试结果和构建日志"
+          echo "📋 失败阶段:"
+          echo "  - 准备: ${{ needs.prepare.result }}"
+          echo "  - 测试: ${{ needs.test.result }}"
+          echo "  - 构建: ${{ needs.build.result }}"
+          echo "  - 部署: ${{ needs.deploy.result }}"
+

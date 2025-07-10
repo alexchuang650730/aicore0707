@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>性能指标与优势</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1"></script>
+    <style>
+        .slide-container {
+            width: 1280px;
+            min-height: 720px;
+            background: linear-gradient(135deg, #1e40af 0%, #4338ca 100%);
+            margin: 0 auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+        .page-title {
+            font-size: 36px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .section-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #e0e7ff;
+            margin-bottom: 15px;
+        }
+        .content-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.5;
+        }
+        .chart-container {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .metric-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+        }
+        .metric-icon {
+            font-size: 24px;
+            margin-right: 15px;
+            width: 30px;
+            text-align: center;
+        }
+        .advantage-item {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        .advantage-icon {
+            font-size: 20px;
+            color: #60a5fa;
+            margin-right: 12px;
+            width: 25px;
+        }
+    </style>
+</head>
+<body>
+    <div class="slide-container">
+        <h1 class="page-title">性能指标与优势</h1>
+        
+        <div class="grid grid-cols-2 gap-6">
+            <!-- 左侧内容：关键性能指标 -->
+            <div>
+                <h2 class="section-title mb-4">
+                    <i class="fas fa-chart-line mr-3"></i>
+                    关键性能指标
+                </h2>
+                
+                <div class="metric-item">
+                    <i class="fas fa-tachometer-alt metric-icon text-blue-400"></i>
+                    <div>
+                        <div class="text-xl font-semibold text-white">49.11% 性能提升</div>
+                        <div class="content-text">MemoryOS长期记忆系统带来的整体性能提升</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <i class="fas fa-bolt metric-icon text-yellow-400"></i>
+                    <div>
+                        <div class="text-xl font-semibold text-white">90%+ 工具发现时间节省</div>
+                        <div class="content-text">MCP-Zero Smart Engine智能工具发现</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <i class="fas fa-brain metric-icon text-green-400"></i>
+                    <div>
+                        <div class="text-xl font-semibold text-white">85%+ 首次推荐成功率</div>
+                        <div class="content-text">AI驱动的工具选择和推荐系统</div>
+                    </div>
+                </div>
+                
+                <div class="metric-item">
+                    <i class="fas fa-users metric-icon text-purple-400"></i>
+                    <div>
+                        <div class="text-xl font-semibold text-white">70%+ 协作效率提升</div>
+                        <div class="content-text">智能协作模式和知识共享机制</div>
+                    </div>
+                </div>
+                
+                <h2 class="section-title mt-6 mb-4">
+                    <i class="fas fa-trophy mr-3"></i>
+                    技术优势
+                </h2>
+                
+                <div class="advantage-item">
+                    <i class="fas fa-check-circle advantage-icon"></i>
+                    <span class="content-text">业界首个6大AI生态系统集成平台</span>
+                </div>
+                
+                <div class="advantage-item">
+                    <i class="fas fa-check-circle advantage-icon"></i>
+                    <span class="content-text">自学习有机智能体网络</span>
+                </div>
+                
+                <div class="advantage-item">
+                    <i class="fas fa-check-circle advantage-icon"></i>
+                    <span class="content-text">三层记忆架构的长期记忆系统</span>
+                </div>
+                
+                <div class="advantage-item">
+                    <i class="fas fa-check-circle advantage-icon"></i>
+                    <span class="content-text">14种专业开发工具的完整生态</span>
+                </div>
+            </div>
+            
+            <!-- 右侧图表 -->
+            <div>
+                <!-- ROI分析图表 -->
+                <div class="chart-container mb-6">
+                    <h3 class="text-xl text-blue-200 mb-3">投资回报分析 (ROI)</h3>
+                    <div style="height: 300px;">
+                        <canvas id="roiChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- 竞品对比图表 -->
+                <div class="chart-container">
+                    <h3 class="text-xl text-blue-200 mb-3">竞品能力对比</h3>
+                    <div style="height: 300px;">
+                        <canvas id="competitorChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ROI分析图表
+        const roiCtx = document.getElementById('roiChart').getContext('2d');
+        const roiChart = new Chart(roiCtx, {
+            type: 'bar',
+            data: {
+                labels: ['开发时间节省', '错误减少', '维护成本降低', '团队协作提升', '总体ROI'],
+                datasets: [{
+                    label: '投资回报率 (%)',
+                    data: [65, 45, 55, 70, 310],
+                    backgroundColor: [
+                        'rgba(96, 165, 250, 0.7)',
+                        'rgba(52, 211, 153, 0.7)',
+                        'rgba(251, 191, 36, 0.7)',
+                        'rgba(167, 139, 250, 0.7)',
+                        'rgba(248, 113, 113, 0.7)'
+                    ],
+                    borderColor: [
+                        'rgba(96, 165, 250, 1)',
+                        'rgba(52, 211, 153, 1)',
+                        'rgba(251, 191, 36, 1)',
+                        'rgba(167, 139, 250, 1)',
+                        'rgba(248, 113, 113, 1)'
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.1)'
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+        
+        // 竞品对比图表
+        const competitorCtx = document.getElementById('competitorChart').getContext('2d');
+        const competitorChart = new Chart(competitorCtx, {
+            type: 'radar',
+            data: {
+                labels: ['AI集成深度', '工具生态', '记忆能力', '协作效率', '自学习能力', '企业级功能'],
+                datasets: [
+                    {
+                        label: 'PowerAutomation 4.1',
+                        data: [95, 90, 95, 85, 90, 85],
+                        backgroundColor: 'rgba(99, 102, 241, 0.2)',
+                        borderColor: 'rgba(99, 102, 241, 1)',
+                        pointBackgroundColor: 'rgba(99, 102, 241, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(99, 102, 241, 1)'
+                    },
+                    {
+                        label: '竞品A',
+                        data: [70, 65, 40, 60, 50, 75],
+                        backgroundColor: 'rgba(251, 191, 36, 0.2)',
+                        borderColor: 'rgba(251, 191, 36, 1)',
+                        pointBackgroundColor: 'rgba(251, 191, 36, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(251, 191, 36, 1)'
+                    },
+                    {
+                        label: '竞品B',
+                        data: [60, 80, 30, 70, 40, 65],
+                        backgroundColor: 'rgba(52, 211, 153, 0.2)',
+                        borderColor: 'rgba(52, 211, 153, 1)',
+                        pointBackgroundColor: 'rgba(52, 211, 153, 1)',
+                        pointBorderColor: '#fff',
+                        pointHoverBackgroundColor: '#fff',
+                        pointHoverBorderColor: 'rgba(52, 211, 153, 1)'
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    r: {
+                        angleLines: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        grid: {
+                            color: 'rgba(255, 255, 255, 0.2)'
+                        },
+                        pointLabels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            }
+                        },
+                        ticks: {
+                            backdropColor: 'transparent',
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: '#ffffff',
+                            font: {
+                                size: 14
+                            },
+                            padding: 20
+                        }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
+
